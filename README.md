@@ -1,0 +1,387 @@
+# MCP Google Analytics Server
+
+A Model Context Protocol (MCP) server for Google Analytics 4, providing comprehensive integration with both the **Google Analytics Data API** (for reading reports) and **Measurement Protocol v2** (for sending events).
+
+[![npm version](https://badge.fury.io/js/mcp-google-analytics.svg)](https://www.npmjs.com/package/mcp-google-analytics)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## ⚡ Token Optimization - READ THIS FIRST!
+
+**IMPORTANT**: Google Analytics reports can return large datasets that consume significant tokens. This server is designed with token optimization in mind:
+
+- **All read tools default to 10 results** - Adjust the `limit` parameter as needed
+- **Use specific date ranges** - Avoid querying years of data at once
+- **Select only needed dimensions/metrics** - Don't request everything
+- **Check [TOKEN_OPTIMIZATION.md](TOKEN_OPTIMIZATION.md)** for detailed best practices
+
+See the dedicated [Token Optimization Guide](TOKEN_OPTIMIZATION.md) for strategies to minimize token usage.
+
+## 🚀 Quick Start
+
+See [QUICKSTART.md](QUICKSTART.md) for a 5-minute setup guide, or follow the installation steps below.
+
+## 📦 Installation
+
+### Option 1: Install globally via npm
+
+```bash
+npm install -g mcp-google-analytics
+```
+
+### Option 2: Use with npx (no installation needed)
+
+```bash
+npx mcp-google-analytics
+```
+
+## 🔧 Configuration
+
+This server requires different credentials for reading data vs sending events:
+
+### For Reading Data (Google Analytics Data API)
+
+You need a **Service Account** with access to your GA4 property:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create or select a project
+3. Enable the **Google Analytics Data API**
+4. Create a Service Account:
+   - Go to "IAM & Admin" > "Service Accounts"
+   - Click "Create Service Account"
+   - Give it a name (e.g., "GA4 MCP Reader")
+   - Grant the "Viewer" role
+   - Create a JSON key and download it
+5. Add the service account email to your GA4 property:
+   - Go to GA4 Admin > Property Access Management
+   - Add the service account email with "Viewer" role
+6. Get your Property ID:
+   - Go to GA4 Admin > Property Settings
+   - Copy the Property ID (numeric, e.g., "123456789")
+
+### For Sending Events (Measurement Protocol)
+
+You need a **Measurement ID** and **API Secret**:
+
+1. Go to GA4 Admin > Data Streams
+2. Select your data stream (web, iOS, or Android)
+3. Copy the **Measurement ID** (format: `G-XXXXXXXXXX`)
+4. Click "Measurement Protocol API secrets"
+5. Click "Create" to generate a new API secret
+6. Copy the secret value
+
+### Environment Variables
+
+Set these environment variables:
+
+```bash
+# For Data API (reading)
+export GA_SERVICE_ACCOUNT_JSON=/path/to/service-account.json
+# Or provide JSON directly:
+# export GA_SERVICE_ACCOUNT_JSON='{"type":"service_account","project_id":"..."}'
+
+export GA_PROPERTY_ID=123456789
+
+# For Measurement Protocol (writing)
+export GA_MEASUREMENT_ID=G-XXXXXXXXXX
+export GA_API_SECRET=your-api-secret-here
+```
+
+## 🔌 Integration with Claude Desktop
+
+Add to your Claude Desktop configuration file:
+
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "google-analytics": {
+      "command": "npx",
+      "args": ["-y", "mcp-google-analytics"],
+      "env": {
+        "GA_SERVICE_ACCOUNT_JSON": "/path/to/service-account.json",
+        "GA_PROPERTY_ID": "123456789",
+        "GA_MEASUREMENT_ID": "G-XXXXXXXXXX",
+        "GA_API_SECRET": "your-api-secret"
+      }
+    }
+  }
+}
+```
+
+Or if installed globally:
+
+```json
+{
+  "mcpServers": {
+    "google-analytics": {
+      "command": "mcp-google-analytics",
+      "env": {
+        "GA_SERVICE_ACCOUNT_JSON": "/path/to/service-account.json",
+        "GA_PROPERTY_ID": "123456789",
+        "GA_MEASUREMENT_ID": "G-XXXXXXXXXX",
+        "GA_API_SECRET": "your-api-secret"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Desktop after updating the configuration.
+
+## 🎯 Integration with Cursor
+
+Add to your Cursor MCP settings file:
+
+**macOS/Linux**: `~/.cursor/mcp.json`
+**Windows**: `%USERPROFILE%\.cursor\mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "google-analytics": {
+      "command": "npx",
+      "args": ["-y", "mcp-google-analytics"],
+      "env": {
+        "GA_SERVICE_ACCOUNT_JSON": "/path/to/service-account.json",
+        "GA_PROPERTY_ID": "123456789",
+        "GA_MEASUREMENT_ID": "G-XXXXXXXXXX",
+        "GA_API_SECRET": "your-api-secret"
+      }
+    }
+  }
+}
+```
+
+Restart Cursor after updating the configuration.
+
+## 🛠️ Available Tools
+
+### Google Analytics Data API (Reading Data)
+
+#### `ga_run_report`
+Run custom reports with dimensions and metrics.
+
+**Common Dimensions**: `date`, `city`, `country`, `deviceCategory`, `browser`, `pagePath`, `eventName`, `sessionSource`, `sessionMedium`, `sessionCampaignName`
+
+**Common Metrics**: `activeUsers`, `sessions`, `screenPageViews`, `conversions`, `totalRevenue`, `engagementRate`, `averageSessionDuration`
+
+**Example**:
+```typescript
+{
+  "dateRanges": [{"startDate": "7daysAgo", "endDate": "today"}],
+  "dimensions": [{"name": "city"}],
+  "metrics": [{"name": "activeUsers"}],
+  "limit": 10
+}
+```
+
+#### `ga_run_realtime_report`
+Get real-time data (last 30 minutes).
+
+**Example**:
+```typescript
+{
+  "metrics": [{"name": "activeUsers"}],
+  "dimensions": [{"name": "country"}],
+  "limit": 10
+}
+```
+
+#### `ga_get_metadata`
+Get all available dimensions and metrics for your property.
+
+**Warning**: Returns 500+ items. Use sparingly.
+
+#### `ga_list_accounts`
+List all GA accounts accessible to the service account.
+
+#### `ga_list_properties`
+List GA4 properties, optionally filtered by account ID.
+
+#### `ga_get_property`
+Get details about the configured property.
+
+#### `ga_list_data_streams`
+List data streams for the configured property.
+
+#### `ga_run_pivot_report`
+Run pivot table reports with row/column dimensions.
+
+**Example**:
+```typescript
+{
+  "dateRanges": [{"startDate": "7daysAgo", "endDate": "today"}],
+  "dimensions": [{"name": "country"}, {"name": "deviceCategory"}],
+  "metrics": [{"name": "activeUsers"}],
+  "pivots": [{"fieldNames": ["deviceCategory"], "limit": 5}]
+}
+```
+
+#### `ga_run_funnel_report`
+Run funnel analysis to track user progression.
+
+**Example**:
+```typescript
+{
+  "dateRanges": [{"startDate": "7daysAgo", "endDate": "today"}],
+  "funnelSteps": [
+    {"name": "page_view"},
+    {"name": "add_to_cart"},
+    {"name": "begin_checkout"},
+    {"name": "purchase"}
+  ]
+}
+```
+
+#### `ga_batch_run_reports`
+Run multiple reports in a single request.
+
+**Warning**: Can return large datasets. Limit to 2-5 reports per batch.
+
+### Measurement Protocol (Sending Events)
+
+#### `ga_send_event`
+Send custom events to GA4.
+
+**Example**:
+```typescript
+{
+  "events": [{
+    "name": "button_click",
+    "params": {
+      "button_id": "cta_signup",
+      "page": "/landing"
+    }
+  }],
+  "user_id": "user123"
+}
+```
+
+#### `ga_validate_event`
+Validate events before sending (uses debug endpoint).
+
+#### `ga_send_pageview`
+Send page view events.
+
+**Example**:
+```typescript
+{
+  "page_location": "https://example.com/products",
+  "page_title": "Products",
+  "user_id": "user123"
+}
+```
+
+#### `ga_send_purchase`
+Send ecommerce purchase events.
+
+**Example**:
+```typescript
+{
+  "transaction_id": "T12345",
+  "value": 99.99,
+  "currency": "USD",
+  "items": [{
+    "item_id": "SKU123",
+    "item_name": "Product Name",
+    "price": 99.99,
+    "quantity": 1
+  }]
+}
+```
+
+#### `ga_send_login`
+Send login events.
+
+#### `ga_send_signup`
+Send user registration events.
+
+#### `ga_send_add_to_cart`
+Send add-to-cart events.
+
+#### `ga_send_begin_checkout`
+Send checkout initiation events.
+
+## 📖 Usage Examples
+
+See [EXAMPLES.md](EXAMPLES.md) for practical usage examples in Spanish.
+
+### Example: Get users by country (last 7 days)
+
+```
+Show me active users by country for the last 7 days
+```
+
+Claude will use `ga_run_report`:
+```json
+{
+  "dateRanges": [{"startDate": "7daysAgo", "endDate": "today"}],
+  "dimensions": [{"name": "country"}],
+  "metrics": [{"name": "activeUsers"}],
+  "limit": 10,
+  "orderBys": [{"metric": {"metricName": "activeUsers"}, "desc": true}]
+}
+```
+
+### Example: Track a purchase
+
+```
+Send a purchase event for order #12345, $99.99 USD
+```
+
+Claude will use `ga_send_purchase`:
+```json
+{
+  "transaction_id": "12345",
+  "value": 99.99,
+  "currency": "USD",
+  "items": [{
+    "item_id": "product_1",
+    "item_name": "Example Product",
+    "price": 99.99,
+    "quantity": 1
+  }]
+}
+```
+
+## 🔍 Debugging
+
+Enable debug logging by setting:
+
+```bash
+export DEBUG=mcp-google-analytics:*
+```
+
+For Measurement Protocol, use `ga_validate_event` to check events before sending them live.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## 🔗 Links
+
+- [GitHub Repository](https://github.com/gomakers-ai/mcp-google-analytics)
+- [npm Package](https://www.npmjs.com/package/mcp-google-analytics)
+- [MCP Documentation](https://modelcontextprotocol.io/)
+- [GA4 Data API Documentation](https://developers.google.com/analytics/devguides/reporting/data/v1)
+- [Measurement Protocol Documentation](https://developers.google.com/analytics/devguides/collection/protocol/ga4)
+
+## 🆘 Support
+
+For issues and questions:
+- [GitHub Issues](https://github.com/gomakers-ai/mcp-google-analytics/issues)
+- [MCP Community Discord](https://discord.gg/modelcontextprotocol)
+
+## 📝 Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
+
+---
+
+**Built with ❤️ for the MCP community**

@@ -1,0 +1,52 @@
+{
+  "name": "mcp-google-analytics",
+  "version": "1.0.0",
+  "description": "MCP server for Google Analytics Data API and Measurement Protocol - Read reports and send events",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "google-analytics",
+    "ga4",
+    "analytics",
+    "measurement-protocol",
+    "claude",
+    "cursor"
+  ],
+  "author": "Leonardo Sepúlveda <lsepulvedatabares@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "mcp-google-analytics": "./build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "tsc && chmod +x build/index.js",
+    "prepare": "npm run build",
+    "watch": "tsc --watch",
+    "dev": "npm run build && node build/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "axios": "^1.7.9",
+    "google-auth-library": "^9.15.0",
+    "zod": "^3.24.1",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gomakers-ai/mcp-google-analytics.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gomakers-ai/mcp-google-analytics/issues"
+  },
+  "homepage": "https://github.com/gomakers-ai/mcp-google-analytics#readme"
+}

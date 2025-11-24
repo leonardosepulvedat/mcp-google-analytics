@@ -1,0 +1,11 @@
+src/
+node_modules/
+.env
+.env.example
+*.log
+.DS_Store
+tsconfig.json
+service-account.json
+*.tgz
+.git/
+.github/

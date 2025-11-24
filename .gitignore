@@ -1,0 +1,8 @@
+node_modules/
+build/
+dist/
+*.log
+.env
+.DS_Store
+service-account.json
+*.tgz
