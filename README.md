@@ -384,4 +384,4 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ---
 
-**Built with ❤️ for the MCP community**
+Made with ❤️ by [GoMakers.ai](https://gomakers.ai/)
