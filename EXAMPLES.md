@@ -459,7 +459,7 @@ Compara los usuarios activos de esta semana con la semana pasada
 ## 📞 Soporte
 
 Si tienes preguntas:
-- [GitHub Issues](https://github.com/gomakers-ai/mcp-google-analytics/issues)
+- [GitHub Issues](https://github.com/leosepulveda/mcp-google-analytics/issues)
 - [Documentación de GA4](https://developers.google.com/analytics/devguides/reporting/data/v1)
 
 ---

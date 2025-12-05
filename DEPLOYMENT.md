@@ -52,7 +52,7 @@ git commit -m "Initial release v1.0.0
 
 ```bash
 # Add remote
-git remote add origin https://github.com/gomakers-ai/mcp-google-analytics.git
+git remote add origin https://github.com/leosepulveda/mcp-google-analytics.git
 
 # Create main branch
 git branch -M main
@@ -125,8 +125,8 @@ npx mcp-google-analytics
 
 **Links:**
 - [npm](https://www.npmjs.com/package/mcp-google-analytics)
-- [GitHub](https://github.com/gomakers-ai/mcp-google-analytics)
-- [Documentation](https://github.com/gomakers-ai/mcp-google-analytics#readme)
+- [GitHub](https://github.com/leosepulveda/mcp-google-analytics)
+- [Documentation](https://github.com/leosepulveda/mcp-google-analytics#readme)
 
 **Author:** Leonardo Sepúlveda
 ```
@@ -152,7 +152,7 @@ A comprehensive MCP server for Google Analytics 4:
 
 Install: npx mcp-google-analytics
 
-Docs: https://github.com/gomakers-ai/mcp-google-analytics
+Docs: https://github.com/leosepulveda/mcp-google-analytics
 
 #MCP #GoogleAnalytics #Claude #AI
 ```

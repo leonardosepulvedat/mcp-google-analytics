@@ -153,7 +153,7 @@ git push origin v1.0.0
 ```
 
 ### GitHub Repository
-- ✅ Repository: `gomakers-ai/mcp-google-analytics`
+- ✅ Repository: `leosepulveda/mcp-google-analytics`
 - ✅ README with badges
 - ✅ License file (MIT)
 - ✅ Contributing guidelines
@@ -181,7 +181,7 @@ npx mcp-google-analytics
 
 **Links:**
 - npm: https://www.npmjs.com/package/mcp-google-analytics
-- GitHub: https://github.com/gomakers-ai/mcp-google-analytics
+- GitHub: https://github.com/leosepulveda/mcp-google-analytics
 ```
 
 ### Smithery Badge
@@ -238,9 +238,9 @@ Potential additions for future versions:
 
 ## 📞 Support & Links
 
-- **GitHub**: https://github.com/gomakers-ai/mcp-google-analytics
+- **GitHub**: https://github.com/leosepulveda/mcp-google-analytics
 - **npm**: https://www.npmjs.com/package/mcp-google-analytics
-- **Issues**: https://github.com/gomakers-ai/mcp-google-analytics/issues
+- **Issues**: https://github.com/leosepulveda/mcp-google-analytics/issues
 - **Author**: Leonardo Sepúlveda <lsepulvedatabares@gmail.com>
 
 ---

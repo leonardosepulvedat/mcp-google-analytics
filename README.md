@@ -366,7 +366,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🔗 Links
 
-- [GitHub Repository](https://github.com/gomakers-ai/mcp-google-analytics)
+- [GitHub Repository](https://github.com/leosepulveda/mcp-google-analytics)
 - [npm Package](https://www.npmjs.com/package/mcp-google-analytics)
 - [MCP Documentation](https://modelcontextprotocol.io/)
 - [GA4 Data API Documentation](https://developers.google.com/analytics/devguides/reporting/data/v1)
@@ -375,7 +375,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## 🆘 Support
 
 For issues and questions:
-- [GitHub Issues](https://github.com/gomakers-ai/mcp-google-analytics/issues)
+- [GitHub Issues](https://github.com/leosepulveda/mcp-google-analytics/issues)
 - [MCP Community Discord](https://discord.gg/modelcontextprotocol)
 
 ## 📝 Changelog
@@ -383,5 +383,3 @@ For issues and questions:
 See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ---
-
-Made with ❤️ by [GoMakers.ai](https://gomakers.ai/)
