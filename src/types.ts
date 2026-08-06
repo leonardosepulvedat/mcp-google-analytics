@@ -60,9 +60,10 @@ export const RunPivotReportRequestSchema = z.object({
 
 export const FunnelStepSchema = z.object({
   name: z.string(),
+  eventName: z.string().optional(),
   isDirectlyFollowedBy: z.boolean().optional(),
   withinDurationFromPriorStep: z.string().optional(),
-  filterExpression: FilterExpressionSchema.optional(),
+  filterExpression: z.any().optional(),
 });
 
 export const RunFunnelReportRequestSchema = z.object({

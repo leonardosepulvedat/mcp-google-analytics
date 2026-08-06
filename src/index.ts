@@ -1,21 +1,23 @@
 #!/usr/bin/env node
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  Tool,
-} from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { GADataClient } from './ga-data-client.js';
 import { MeasurementProtocolClient } from './measurement-protocol-client.js';
-import { z } from 'zod';
+import { EcommerceItemSchema } from './types.js';
 
-// Initialize clients
+const packageJson = JSON.parse(
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8')
+);
+
+// Initialize clients from environment variables
 let gaDataClient: GADataClient | null = null;
 let mpClient: MeasurementProtocolClient | null = null;
 
-// Initialize clients from environment variables
 function initializeClients() {
   const serviceAccountJson = process.env.GA_SERVICE_ACCOUNT_JSON;
   const propertyId = process.env.GA_PROPERTY_ID;
@@ -45,302 +47,238 @@ function initializeClients() {
   }
 }
 
-// Define tools
-const TOOLS: Tool[] = [
-  // Google Analytics Data API Tools
+function requireDataClient(): GADataClient {
+  if (!gaDataClient) {
+    throw new Error('GA Data API not configured. Set GA_SERVICE_ACCOUNT_JSON and GA_PROPERTY_ID.');
+  }
+  return gaDataClient;
+}
+
+function requireMpClient(): MeasurementProtocolClient {
+  if (!mpClient) {
+    throw new Error('Measurement Protocol not configured. Set GA_MEASUREMENT_ID and GA_API_SECRET.');
+  }
+  return mpClient;
+}
+
+function jsonResult(data: unknown) {
+  return {
+    content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
+  };
+}
+
+// Shared schema fragments
+const dateRangeSchema = z.object({
+  startDate: z.string().describe('Start date (YYYY-MM-DD or "yesterday", "today", "7daysAgo")'),
+  endDate: z.string().describe('End date (YYYY-MM-DD or "yesterday", "today", "7daysAgo")'),
+  name: z.string().optional().describe('Optional name for the date range'),
+});
+
+const namedFieldSchema = z.object({ name: z.string() });
+
+const userPropertiesSchema = z
+  .record(z.object({ value: z.union([z.string(), z.number()]) }))
+  .optional()
+  .describe('User properties (e.g., {subscription_tier: {value: "premium"}})');
+
+const readOnly = { readOnlyHint: true };
+const sendsData = { readOnlyHint: false, openWorldHint: true };
+
+const server = new McpServer({
+  name: 'mcp-google-analytics',
+  version: packageJson.version,
+});
+
+// ---------------------------------------------------------------------------
+// Google Analytics Data API tools
+// ---------------------------------------------------------------------------
+
+server.registerTool(
+  'ga_run_report',
   {
-    name: 'ga_run_report',
     description: `Run a custom Google Analytics report with dimensions and metrics.
 
-⚠️ TOKEN OPTIMIZATION: Use 'limit' to control result size (default: 10, max: 100).
-Returns summarized data by default. This tool can consume significant tokens with large datasets.
+⚠️ TOKEN OPTIMIZATION: Use 'limit' to control result size (default: 10).
+This tool can consume significant tokens with large datasets.
 
 Common dimensions: date, city, country, deviceCategory, browser, pagePath, eventName
 Common metrics: activeUsers, sessions, screenPageViews, conversions, totalRevenue`,
     inputSchema: {
-      type: 'object',
-      properties: {
-        dateRanges: {
-          type: 'array',
-          description: 'Date ranges for the report (e.g., [{startDate: "2024-01-01", endDate: "2024-01-31"}])',
-          items: {
-            type: 'object',
-            properties: {
-              startDate: { type: 'string', description: 'Start date (YYYY-MM-DD or "yesterday", "today", "7daysAgo")' },
-              endDate: { type: 'string', description: 'End date (YYYY-MM-DD or "yesterday", "today", "7daysAgo")' },
-              name: { type: 'string', description: 'Optional name for the date range' },
-            },
-            required: ['startDate', 'endDate'],
-          },
-        },
-        dimensions: {
-          type: 'array',
-          description: 'Dimensions to group by (e.g., ["date", "city"])',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string' },
-            },
-            required: ['name'],
-          },
-        },
-        metrics: {
-          type: 'array',
-          description: 'Metrics to measure (e.g., ["activeUsers", "sessions"])',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string' },
-            },
-            required: ['name'],
-          },
-        },
-        limit: {
-          type: 'number',
-          description: 'Maximum number of rows to return (default: 10, recommended: 10-50 for token efficiency)',
-          default: 10,
-        },
-        offset: {
-          type: 'number',
-          description: 'Number of rows to skip (for pagination)',
-        },
-        orderBys: {
-          type: 'array',
-          description: 'Sorting specification',
-          items: {
-            type: 'object',
-          },
-        },
-      },
-      required: ['dateRanges', 'metrics'],
+      dateRanges: z.array(dateRangeSchema).describe('Date ranges for the report'),
+      dimensions: z.array(namedFieldSchema).optional().describe('Dimensions to group by (e.g., [{name: "date"}])'),
+      metrics: z.array(namedFieldSchema).describe('Metrics to measure (e.g., [{name: "activeUsers"}])'),
+      limit: z.number().int().positive().optional().describe('Maximum number of rows to return (default: 10)'),
+      offset: z.number().int().nonnegative().optional().describe('Number of rows to skip (for pagination)'),
+      orderBys: z.array(z.record(z.any())).optional().describe('Sorting specification'),
+      dimensionFilter: z.record(z.any()).optional().describe('Dimension filter expression'),
+      metricFilter: z.record(z.any()).optional().describe('Metric filter expression'),
     },
+    annotations: readOnly,
   },
+  async (args) => jsonResult(await requireDataClient().runReport(args as any))
+);
+
+server.registerTool(
+  'ga_run_realtime_report',
   {
-    name: 'ga_run_realtime_report',
     description: `Get real-time Google Analytics data (last 30 minutes).
 
 ⚠️ TOKEN OPTIMIZATION: Use 'limit' to control result size (default: 10).
-Real-time data is updated continuously. Limit results to avoid token waste.
 
 Common dimensions: city, country, deviceCategory, unifiedScreenName
 Common metrics: activeUsers, screenPageViews, conversions`,
     inputSchema: {
-      type: 'object',
-      properties: {
-        dimensions: {
-          type: 'array',
-          description: 'Dimensions to group by',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string' },
-            },
-            required: ['name'],
-          },
-        },
-        metrics: {
-          type: 'array',
-          description: 'Metrics to measure',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string' },
-            },
-            required: ['name'],
-          },
-        },
-        limit: {
-          type: 'number',
-          description: 'Maximum number of rows (default: 10)',
-          default: 10,
-        },
-      },
-      required: ['metrics'],
+      dimensions: z.array(namedFieldSchema).optional().describe('Dimensions to group by'),
+      metrics: z.array(namedFieldSchema).describe('Metrics to measure'),
+      limit: z.number().int().positive().optional().describe('Maximum number of rows (default: 10)'),
     },
+    annotations: readOnly,
   },
+  async (args) => jsonResult(await requireDataClient().runRealtimeReport(args as any))
+);
+
+server.registerTool(
+  'ga_get_metadata',
   {
-    name: 'ga_get_metadata',
     description: `Get available dimensions and metrics metadata for your GA4 property.
 
 ⚠️ TOKEN OPTIMIZATION: This returns ALL available dimensions and metrics.
 Response can be large (~500+ items). Use sparingly and cache results when possible.`,
-    inputSchema: {
-      type: 'object',
-      properties: {},
-    },
+    inputSchema: {},
+    annotations: readOnly,
   },
+  async () => jsonResult(await requireDataClient().getMetadata())
+);
+
+server.registerTool(
+  'ga_list_accounts',
   {
-    name: 'ga_list_accounts',
     description: `List all Google Analytics accounts accessible to the service account.
 
-⚠️ TOKEN OPTIMIZATION: Returns summary information only.
 Use this to find account IDs for listing properties.`,
-    inputSchema: {
-      type: 'object',
-      properties: {},
-    },
+    inputSchema: {},
+    annotations: readOnly,
   },
+  async () => jsonResult(await requireDataClient().listAccounts())
+);
+
+server.registerTool(
+  'ga_list_properties',
   {
-    name: 'ga_list_properties',
     description: `List Google Analytics properties.
 
-⚠️ TOKEN OPTIMIZATION: Returns basic property information.
-Optionally filter by account ID to reduce results.`,
+Optionally filter by account ID. Without an account ID, properties from all
+accessible accounts are aggregated.`,
     inputSchema: {
-      type: 'object',
-      properties: {
-        accountId: {
-          type: 'string',
-          description: 'Optional account ID to filter properties (e.g., "123456789")',
-        },
-      },
+      accountId: z.string().optional().describe('Optional account ID to filter properties (e.g., "123456789")'),
     },
+    annotations: readOnly,
   },
-  {
-    name: 'ga_get_property',
-    description: `Get details about the configured GA4 property.
+  async ({ accountId }) => jsonResult(await requireDataClient().listProperties(accountId))
+);
 
-⚠️ TOKEN OPTIMIZATION: Returns basic property metadata only.`,
-    inputSchema: {
-      type: 'object',
-      properties: {},
-    },
-  },
+server.registerTool(
+  'ga_get_property',
   {
-    name: 'ga_list_data_streams',
+    description: 'Get details about the configured GA4 property.',
+    inputSchema: {},
+    annotations: readOnly,
+  },
+  async () => jsonResult(await requireDataClient().getProperty())
+);
+
+server.registerTool(
+  'ga_list_data_streams',
+  {
     description: `List data streams for the configured GA4 property.
 
-⚠️ TOKEN OPTIMIZATION: Returns summary information.
 Use this to find measurement IDs for Measurement Protocol.`,
-    inputSchema: {
-      type: 'object',
-      properties: {},
-    },
+    inputSchema: {},
+    annotations: readOnly,
   },
+  async () => jsonResult(await requireDataClient().listDataStreams())
+);
+
+server.registerTool(
+  'ga_run_pivot_report',
   {
-    name: 'ga_run_pivot_report',
     description: `Run a pivot table report with row and column dimensions.
 
 ⚠️ TOKEN OPTIMIZATION: Pivot reports can be VERY large.
 Limit dimensions and use small date ranges. Recommended for analysis, not raw data extraction.`,
     inputSchema: {
-      type: 'object',
-      properties: {
-        dateRanges: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              startDate: { type: 'string' },
-              endDate: { type: 'string' },
-            },
-            required: ['startDate', 'endDate'],
-          },
-        },
-        dimensions: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string' },
-            },
-            required: ['name'],
-          },
-        },
-        metrics: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string' },
-            },
-            required: ['name'],
-          },
-        },
-        pivots: {
-          type: 'array',
-          description: 'Pivot specifications with fieldNames',
-          items: {
-            type: 'object',
-            properties: {
-              fieldNames: { type: 'array', items: { type: 'string' } },
-              limit: { type: 'number' },
-            },
-            required: ['fieldNames'],
-          },
-        },
-      },
-      required: ['dateRanges', 'metrics', 'pivots'],
+      dateRanges: z.array(dateRangeSchema),
+      dimensions: z.array(namedFieldSchema).optional(),
+      metrics: z.array(namedFieldSchema),
+      pivots: z
+        .array(
+          z.object({
+            fieldNames: z.array(z.string()),
+            limit: z.number().int().positive().optional(),
+          })
+        )
+        .describe('Pivot specifications with fieldNames'),
     },
+    annotations: readOnly,
   },
-  {
-    name: 'ga_run_funnel_report',
-    description: `Run a funnel analysis report to track user progression through steps.
+  async (args) => jsonResult(await requireDataClient().runPivotReport(args as any))
+);
 
-⚠️ TOKEN OPTIMIZATION: Funnel reports are moderate in size.
-Use specific date ranges and limit breakdown dimensions.`,
-    inputSchema: {
-      type: 'object',
-      properties: {
-        dateRanges: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              startDate: { type: 'string' },
-              endDate: { type: 'string' },
-            },
-            required: ['startDate', 'endDate'],
-          },
-        },
-        funnelSteps: {
-          type: 'array',
-          description: 'Steps in the funnel',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string' },
-              isDirectlyFollowedBy: { type: 'boolean' },
-            },
-            required: ['name'],
-          },
-        },
-        funnelBreakdown: {
-          type: 'object',
-          description: 'Optional dimension to break down funnel',
-          properties: {
-            name: { type: 'string' },
-          },
-        },
-      },
-      required: ['dateRanges', 'funnelSteps'],
-    },
-  },
+server.registerTool(
+  'ga_run_funnel_report',
   {
-    name: 'ga_batch_run_reports',
+    description: `Run a funnel analysis report to track user progression through steps (Data API v1alpha).
+
+Each step matches an event: set 'eventName' per step (defaults to the step name).
+For advanced matching, pass a full 'filterExpression' instead.`,
+    inputSchema: {
+      dateRanges: z.array(dateRangeSchema),
+      funnelSteps: z
+        .array(
+          z.object({
+            name: z.string().describe('Display name for the step'),
+            eventName: z.string().optional().describe('Event that defines the step (defaults to name)'),
+            isDirectlyFollowedBy: z.boolean().optional(),
+            withinDurationFromPriorStep: z.string().optional().describe('e.g., "3600s"'),
+            filterExpression: z.record(z.any()).optional().describe('Advanced FunnelFilterExpression (overrides eventName)'),
+          })
+        )
+        .describe('Steps in the funnel'),
+      funnelBreakdown: namedFieldSchema.optional().describe('Optional dimension to break down funnel'),
+      funnelVisualizationType: z.enum(['STANDARD_FUNNEL', 'TRENDED_FUNNEL']).optional(),
+    },
+    annotations: readOnly,
+  },
+  async (args) => jsonResult(await requireDataClient().runFunnelReport(args as any))
+);
+
+server.registerTool(
+  'ga_batch_run_reports',
+  {
     description: `Run multiple reports in a single request.
 
 ⚠️ TOKEN OPTIMIZATION: Can return LARGE amounts of data.
-Limit to 2-5 reports per batch. Each report should have small limits.
-Use only when you need related data that should be fetched together.`,
+Limit to 2-5 reports per batch. Each report should have small limits.`,
     inputSchema: {
-      type: 'object',
-      properties: {
-        requests: {
-          type: 'array',
-          description: 'Array of report requests (same format as ga_run_report)',
-          items: {
-            type: 'object',
-          },
-        },
-      },
-      required: ['requests'],
+      requests: z.array(z.record(z.any())).describe('Array of report requests (same format as ga_run_report)'),
     },
+    annotations: readOnly,
   },
+  async ({ requests }) => jsonResult(await requireDataClient().batchRunReports(requests as any))
+);
 
-  // Measurement Protocol Tools
+// ---------------------------------------------------------------------------
+// Measurement Protocol tools
+// ---------------------------------------------------------------------------
+
+const eventSchema = z.object({
+  name: z.string().describe('Event name (e.g., "purchase", "sign_up")'),
+  params: z.record(z.any()).optional().describe('Event parameters (key-value pairs)'),
+});
+
+server.registerTool(
+  'ga_send_event',
   {
-    name: 'ga_send_event',
     description: `Send a custom event to Google Analytics via Measurement Protocol.
 
 Use this for tracking custom user actions, conversions, or any GA4 event.
@@ -348,485 +286,211 @@ Events are processed asynchronously and appear in reports within minutes.
 
 Common events: click, form_submit, video_play, file_download, custom_conversion`,
     inputSchema: {
-      type: 'object',
-      properties: {
-        client_id: {
-          type: 'string',
-          description: 'Client ID (UUID format recommended). Auto-generated if not provided.',
-        },
-        user_id: {
-          type: 'string',
-          description: 'Optional User ID for cross-device tracking',
-        },
-        events: {
-          type: 'array',
-          description: 'Events to send (can send multiple in one request)',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string', description: 'Event name (e.g., "purchase", "sign_up")' },
-              params: {
-                type: 'object',
-                description: 'Event parameters (key-value pairs)',
-                additionalProperties: true,
-              },
-            },
-            required: ['name'],
-          },
-        },
-        user_properties: {
-          type: 'object',
-          description: 'User properties (e.g., {subscription_tier: {value: "premium"}})',
-          additionalProperties: {
-            type: 'object',
-            properties: {
-              value: { type: ['string', 'number'] },
-            },
-          },
-        },
-      },
-      required: ['events'],
+      client_id: z.string().optional().describe('Client ID (UUID format recommended). Auto-generated if not provided.'),
+      user_id: z.string().optional().describe('Optional User ID for cross-device tracking'),
+      events: z.array(eventSchema).describe('Events to send (can send multiple in one request)'),
+      user_properties: userPropertiesSchema,
     },
+    annotations: sendsData,
   },
+  async (args) => jsonResult(await requireMpClient().sendEvent(args as any))
+);
+
+server.registerTool(
+  'ga_validate_event',
   {
-    name: 'ga_validate_event',
     description: `Validate an event before sending it to Google Analytics.
 
 Uses GA4's debug endpoint to check for errors without recording the event.
 Returns validation messages and errors if any.`,
     inputSchema: {
-      type: 'object',
-      properties: {
-        client_id: { type: 'string' },
-        user_id: { type: 'string' },
-        events: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string' },
-              params: { type: 'object', additionalProperties: true },
-            },
-            required: ['name'],
-          },
-        },
-        user_properties: { type: 'object', additionalProperties: true },
-      },
-      required: ['events'],
+      client_id: z.string().optional(),
+      user_id: z.string().optional(),
+      events: z.array(eventSchema),
+      user_properties: userPropertiesSchema,
     },
+    annotations: readOnly,
   },
+  async (args) => jsonResult(await requireMpClient().validateEvent(args as any))
+);
+
+server.registerTool(
+  'ga_send_pageview',
   {
-    name: 'ga_send_pageview',
     description: `Send a page view event to Google Analytics.
 
 Standard event for tracking page/screen views. Automatically uses 'page_view' event name.`,
     inputSchema: {
-      type: 'object',
-      properties: {
-        client_id: { type: 'string', description: 'Client ID (auto-generated if not provided)' },
-        user_id: { type: 'string', description: 'Optional User ID' },
-        page_location: { type: 'string', description: 'Full URL of the page' },
-        page_title: { type: 'string', description: 'Page title' },
-        page_referrer: { type: 'string', description: 'Referrer URL' },
-        user_properties: { type: 'object', additionalProperties: true },
-      },
-      required: ['page_location'],
+      client_id: z.string().optional().describe('Client ID (auto-generated if not provided)'),
+      user_id: z.string().optional().describe('Optional User ID'),
+      page_location: z.string().describe('Full URL of the page'),
+      page_title: z.string().optional().describe('Page title'),
+      page_referrer: z.string().optional().describe('Referrer URL'),
+      user_properties: userPropertiesSchema,
     },
+    annotations: sendsData,
   },
+  async (args) =>
+    jsonResult(
+      await requireMpClient().sendPageView({
+        clientId: args.client_id,
+        userId: args.user_id,
+        pageLocation: args.page_location,
+        pageTitle: args.page_title,
+        pageReferrer: args.page_referrer,
+        userProperties: args.user_properties,
+      })
+    )
+);
+
+server.registerTool(
+  'ga_send_purchase',
   {
-    name: 'ga_send_purchase',
     description: `Send an ecommerce purchase event to Google Analytics.
 
 Standard event for tracking completed purchases with transaction details and items.`,
     inputSchema: {
-      type: 'object',
-      properties: {
-        client_id: { type: 'string' },
-        user_id: { type: 'string' },
-        transaction_id: { type: 'string', description: 'Unique transaction ID' },
-        value: { type: 'number', description: 'Total purchase value' },
-        currency: { type: 'string', description: 'Currency code (e.g., USD, EUR)' },
-        tax: { type: 'number', description: 'Tax amount' },
-        shipping: { type: 'number', description: 'Shipping cost' },
-        coupon: { type: 'string', description: 'Coupon code used' },
-        affiliation: { type: 'string', description: 'Store or affiliation' },
-        items: {
-          type: 'array',
-          description: 'Purchased items',
-          items: {
-            type: 'object',
-            properties: {
-              item_id: { type: 'string' },
-              item_name: { type: 'string' },
-              price: { type: 'number' },
-              quantity: { type: 'number' },
-              item_brand: { type: 'string' },
-              item_category: { type: 'string' },
-              item_variant: { type: 'string' },
-            },
-          },
-        },
-        user_properties: { type: 'object', additionalProperties: true },
-      },
-      required: ['transaction_id', 'value', 'currency', 'items'],
+      client_id: z.string().optional(),
+      user_id: z.string().optional(),
+      transaction_id: z.string().describe('Unique transaction ID'),
+      value: z.number().describe('Total purchase value'),
+      currency: z.string().describe('Currency code (e.g., USD, EUR)'),
+      tax: z.number().optional().describe('Tax amount'),
+      shipping: z.number().optional().describe('Shipping cost'),
+      coupon: z.string().optional().describe('Coupon code used'),
+      affiliation: z.string().optional().describe('Store or affiliation'),
+      items: z.array(EcommerceItemSchema).describe('Purchased items'),
+      user_properties: userPropertiesSchema,
     },
+    annotations: sendsData,
   },
+  async (args) =>
+    jsonResult(
+      await requireMpClient().sendPurchase({
+        clientId: args.client_id,
+        userId: args.user_id,
+        transactionId: args.transaction_id,
+        value: args.value,
+        currency: args.currency,
+        tax: args.tax,
+        shipping: args.shipping,
+        items: args.items,
+        coupon: args.coupon,
+        affiliation: args.affiliation,
+        userProperties: args.user_properties,
+      })
+    )
+);
+
+server.registerTool(
+  'ga_send_login',
   {
-    name: 'ga_send_login',
     description: `Send a login event to Google Analytics.
 
 Standard event for tracking user logins with authentication method.`,
     inputSchema: {
-      type: 'object',
-      properties: {
-        client_id: { type: 'string' },
-        user_id: { type: 'string', description: 'User ID (recommended for login events)' },
-        method: { type: 'string', description: 'Login method (e.g., "Google", "Email", "Facebook")' },
-        user_properties: { type: 'object', additionalProperties: true },
-      },
-      required: ['method'],
+      client_id: z.string().optional(),
+      user_id: z.string().optional().describe('User ID (recommended for login events)'),
+      method: z.string().describe('Login method (e.g., "Google", "Email", "Facebook")'),
+      user_properties: userPropertiesSchema,
     },
+    annotations: sendsData,
   },
+  async (args) =>
+    jsonResult(
+      await requireMpClient().sendLogin({
+        clientId: args.client_id,
+        userId: args.user_id,
+        method: args.method,
+        userProperties: args.user_properties,
+      })
+    )
+);
+
+server.registerTool(
+  'ga_send_signup',
   {
-    name: 'ga_send_signup',
     description: `Send a sign-up event to Google Analytics.
 
 Standard event for tracking new user registrations.`,
     inputSchema: {
-      type: 'object',
-      properties: {
-        client_id: { type: 'string' },
-        user_id: { type: 'string', description: 'User ID for the new user' },
-        method: { type: 'string', description: 'Sign-up method (e.g., "Google", "Email")' },
-        user_properties: { type: 'object', additionalProperties: true },
-      },
-      required: ['method'],
+      client_id: z.string().optional(),
+      user_id: z.string().optional().describe('User ID for the new user'),
+      method: z.string().describe('Sign-up method (e.g., "Google", "Email")'),
+      user_properties: userPropertiesSchema,
     },
+    annotations: sendsData,
   },
+  async (args) =>
+    jsonResult(
+      await requireMpClient().sendSignUp({
+        clientId: args.client_id,
+        userId: args.user_id,
+        method: args.method,
+        userProperties: args.user_properties,
+      })
+    )
+);
+
+server.registerTool(
+  'ga_send_add_to_cart',
   {
-    name: 'ga_send_add_to_cart',
     description: `Send an add to cart event to Google Analytics.
 
 Ecommerce event for tracking when items are added to shopping cart.`,
     inputSchema: {
-      type: 'object',
-      properties: {
-        client_id: { type: 'string' },
-        user_id: { type: 'string' },
-        currency: { type: 'string', description: 'Currency code' },
-        value: { type: 'number', description: 'Total value of items added' },
-        items: {
-          type: 'array',
-          description: 'Items added to cart',
-          items: {
-            type: 'object',
-            properties: {
-              item_id: { type: 'string' },
-              item_name: { type: 'string' },
-              price: { type: 'number' },
-              quantity: { type: 'number' },
-            },
-          },
-        },
-        user_properties: { type: 'object', additionalProperties: true },
-      },
-      required: ['currency', 'value', 'items'],
+      client_id: z.string().optional(),
+      user_id: z.string().optional(),
+      currency: z.string().describe('Currency code'),
+      value: z.number().describe('Total value of items added'),
+      items: z.array(EcommerceItemSchema).describe('Items added to cart'),
+      user_properties: userPropertiesSchema,
     },
+    annotations: sendsData,
   },
+  async (args) =>
+    jsonResult(
+      await requireMpClient().sendAddToCart({
+        clientId: args.client_id,
+        userId: args.user_id,
+        currency: args.currency,
+        value: args.value,
+        items: args.items,
+        userProperties: args.user_properties,
+      })
+    )
+);
+
+server.registerTool(
+  'ga_send_begin_checkout',
   {
-    name: 'ga_send_begin_checkout',
     description: `Send a begin checkout event to Google Analytics.
 
 Ecommerce event for tracking when users start the checkout process.`,
     inputSchema: {
-      type: 'object',
-      properties: {
-        client_id: { type: 'string' },
-        user_id: { type: 'string' },
-        currency: { type: 'string', description: 'Currency code' },
-        value: { type: 'number', description: 'Total value of cart' },
-        coupon: { type: 'string', description: 'Coupon code applied' },
-        items: {
-          type: 'array',
-          description: 'Items in checkout',
-          items: {
-            type: 'object',
-            properties: {
-              item_id: { type: 'string' },
-              item_name: { type: 'string' },
-              price: { type: 'number' },
-              quantity: { type: 'number' },
-            },
-          },
-        },
-        user_properties: { type: 'object', additionalProperties: true },
-      },
-      required: ['currency', 'value', 'items'],
+      client_id: z.string().optional(),
+      user_id: z.string().optional(),
+      currency: z.string().describe('Currency code'),
+      value: z.number().describe('Total value of cart'),
+      coupon: z.string().optional().describe('Coupon code applied'),
+      items: z.array(EcommerceItemSchema).describe('Items in checkout'),
+      user_properties: userPropertiesSchema,
     },
+    annotations: sendsData,
   },
-];
-
-// Create server
-const server = new Server(
-  {
-    name: 'mcp-google-analytics',
-    version: '1.0.0',
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
-  }
+  async (args) =>
+    jsonResult(
+      await requireMpClient().sendBeginCheckout({
+        clientId: args.client_id,
+        userId: args.user_id,
+        currency: args.currency,
+        value: args.value,
+        items: args.items,
+        coupon: args.coupon,
+        userProperties: args.user_properties,
+      })
+    )
 );
-
-// List tools handler
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: TOOLS,
-  };
-});
-
-// Call tool handler
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-
-  try {
-    // Google Analytics Data API Tools
-    if (name === 'ga_run_report') {
-      if (!gaDataClient) {
-        throw new Error('GA Data API not configured. Set GA_SERVICE_ACCOUNT_JSON and GA_PROPERTY_ID.');
-      }
-      const result = await gaDataClient.runReport(args as any);
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_run_realtime_report') {
-      if (!gaDataClient) {
-        throw new Error('GA Data API not configured. Set GA_SERVICE_ACCOUNT_JSON and GA_PROPERTY_ID.');
-      }
-      const result = await gaDataClient.runRealtimeReport(args as any);
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_get_metadata') {
-      if (!gaDataClient) {
-        throw new Error('GA Data API not configured. Set GA_SERVICE_ACCOUNT_JSON and GA_PROPERTY_ID.');
-      }
-      const result = await gaDataClient.getMetadata();
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_list_accounts') {
-      if (!gaDataClient) {
-        throw new Error('GA Data API not configured. Set GA_SERVICE_ACCOUNT_JSON and GA_PROPERTY_ID.');
-      }
-      const result = await gaDataClient.listAccounts();
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_list_properties') {
-      if (!gaDataClient) {
-        throw new Error('GA Data API not configured. Set GA_SERVICE_ACCOUNT_JSON and GA_PROPERTY_ID.');
-      }
-      const accountId = (args as any)?.accountId;
-      const result = await gaDataClient.listProperties(accountId);
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_get_property') {
-      if (!gaDataClient) {
-        throw new Error('GA Data API not configured. Set GA_SERVICE_ACCOUNT_JSON and GA_PROPERTY_ID.');
-      }
-      const result = await gaDataClient.getProperty();
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_list_data_streams') {
-      if (!gaDataClient) {
-        throw new Error('GA Data API not configured. Set GA_SERVICE_ACCOUNT_JSON and GA_PROPERTY_ID.');
-      }
-      const result = await gaDataClient.listDataStreams();
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_run_pivot_report') {
-      if (!gaDataClient) {
-        throw new Error('GA Data API not configured. Set GA_SERVICE_ACCOUNT_JSON and GA_PROPERTY_ID.');
-      }
-      const result = await gaDataClient.runPivotReport(args as any);
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_run_funnel_report') {
-      if (!gaDataClient) {
-        throw new Error('GA Data API not configured. Set GA_SERVICE_ACCOUNT_JSON and GA_PROPERTY_ID.');
-      }
-      const result = await gaDataClient.runFunnelReport(args as any);
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_batch_run_reports') {
-      if (!gaDataClient) {
-        throw new Error('GA Data API not configured. Set GA_SERVICE_ACCOUNT_JSON and GA_PROPERTY_ID.');
-      }
-      const requests = (args as any).requests;
-      const result = await gaDataClient.batchRunReports(requests);
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    // Measurement Protocol Tools
-    if (name === 'ga_send_event') {
-      if (!mpClient) {
-        throw new Error('Measurement Protocol not configured. Set GA_MEASUREMENT_ID and GA_API_SECRET.');
-      }
-      const result = await mpClient.sendEvent(args as any);
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_validate_event') {
-      if (!mpClient) {
-        throw new Error('Measurement Protocol not configured. Set GA_MEASUREMENT_ID and GA_API_SECRET.');
-      }
-      const result = await mpClient.validateEvent(args as any);
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_send_pageview') {
-      if (!mpClient) {
-        throw new Error('Measurement Protocol not configured. Set GA_MEASUREMENT_ID and GA_API_SECRET.');
-      }
-      const result = await mpClient.sendPageView({
-        clientId: (args as any).client_id,
-        userId: (args as any).user_id,
-        pageLocation: (args as any).page_location,
-        pageTitle: (args as any).page_title,
-        pageReferrer: (args as any).page_referrer,
-        userProperties: (args as any).user_properties,
-      });
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_send_purchase') {
-      if (!mpClient) {
-        throw new Error('Measurement Protocol not configured. Set GA_MEASUREMENT_ID and GA_API_SECRET.');
-      }
-      const result = await mpClient.sendPurchase({
-        clientId: (args as any).client_id,
-        userId: (args as any).user_id,
-        transactionId: (args as any).transaction_id,
-        value: (args as any).value,
-        currency: (args as any).currency,
-        tax: (args as any).tax,
-        shipping: (args as any).shipping,
-        items: (args as any).items,
-        coupon: (args as any).coupon,
-        affiliation: (args as any).affiliation,
-        userProperties: (args as any).user_properties,
-      });
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_send_login') {
-      if (!mpClient) {
-        throw new Error('Measurement Protocol not configured. Set GA_MEASUREMENT_ID and GA_API_SECRET.');
-      }
-      const result = await mpClient.sendLogin({
-        clientId: (args as any).client_id,
-        userId: (args as any).user_id,
-        method: (args as any).method,
-        userProperties: (args as any).user_properties,
-      });
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_send_signup') {
-      if (!mpClient) {
-        throw new Error('Measurement Protocol not configured. Set GA_MEASUREMENT_ID and GA_API_SECRET.');
-      }
-      const result = await mpClient.sendSignUp({
-        clientId: (args as any).client_id,
-        userId: (args as any).user_id,
-        method: (args as any).method,
-        userProperties: (args as any).user_properties,
-      });
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_send_add_to_cart') {
-      if (!mpClient) {
-        throw new Error('Measurement Protocol not configured. Set GA_MEASUREMENT_ID and GA_API_SECRET.');
-      }
-      const result = await mpClient.sendAddToCart({
-        clientId: (args as any).client_id,
-        userId: (args as any).user_id,
-        currency: (args as any).currency,
-        value: (args as any).value,
-        items: (args as any).items,
-        userProperties: (args as any).user_properties,
-      });
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    if (name === 'ga_send_begin_checkout') {
-      if (!mpClient) {
-        throw new Error('Measurement Protocol not configured. Set GA_MEASUREMENT_ID and GA_API_SECRET.');
-      }
-      const result = await mpClient.sendBeginCheckout({
-        clientId: (args as any).client_id,
-        userId: (args as any).user_id,
-        currency: (args as any).currency,
-        value: (args as any).value,
-        items: (args as any).items,
-        coupon: (args as any).coupon,
-        userProperties: (args as any).user_properties,
-      });
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    }
-
-    throw new Error(`Unknown tool: ${name}`);
-  } catch (error: any) {
-    return {
-      content: [{ type: 'text', text: `Error: ${error.message}` }],
-      isError: true,
-    };
-  }
-});
 
 // Start server
 async function main() {

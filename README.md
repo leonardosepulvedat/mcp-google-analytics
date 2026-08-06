@@ -222,6 +222,8 @@ Run pivot table reports with row/column dimensions.
 #### `ga_run_funnel_report`
 Run funnel analysis to track user progression.
 
+**Note**: Funnel reporting uses the Data API v1alpha channel (the only channel where Google exposes it). Each step matches an event: set `eventName` per step, or omit it to use the step's `name` as the event name. For advanced matching, pass a full `filterExpression`.
+
 **Example**:
 ```typescript
 {
@@ -230,7 +232,7 @@ Run funnel analysis to track user progression.
     {"name": "page_view"},
     {"name": "add_to_cart"},
     {"name": "begin_checkout"},
-    {"name": "purchase"}
+    {"name": "Purchase", "eventName": "purchase"}
   ]
 }
 ```
@@ -366,7 +368,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🔗 Links
 
-- [GitHub Repository](https://github.com/leosepulveda/mcp-google-analytics)
+- [GitHub Repository](https://github.com/leonardosepulvedat/mcp-google-analytics)
 - [npm Package](https://www.npmjs.com/package/mcp-google-analytics)
 - [MCP Documentation](https://modelcontextprotocol.io/)
 - [GA4 Data API Documentation](https://developers.google.com/analytics/devguides/reporting/data/v1)
@@ -375,7 +377,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## 🆘 Support
 
 For issues and questions:
-- [GitHub Issues](https://github.com/leosepulveda/mcp-google-analytics/issues)
+- [GitHub Issues](https://github.com/leonardosepulvedat/mcp-google-analytics/issues)
 - [MCP Community Discord](https://discord.gg/modelcontextprotocol)
 
 ## 📝 Changelog

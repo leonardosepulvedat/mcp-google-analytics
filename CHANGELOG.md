@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-06
+
+### Fixed
+- `ga_run_funnel_report` now works: it targets the Data API **v1alpha** channel (the only channel where `runFunnelReport` exists) and sends the correct request shape (`funnel.steps` with a `filterExpression` per step, `funnelBreakdown.breakdownDimension`). Steps accept an optional `eventName` (defaults to the step name) or a full `filterExpression`.
+- `ga_list_properties` without an account ID no longer fails: it now aggregates properties across all accessible accounts (the Admin API requires a `filter`).
+- The default limit of 10 rows documented for reports is now actually enforced in `ga_run_report`, `ga_run_realtime_report`, and `ga_batch_run_reports` (previously GA returned up to 10,000 rows when `limit` was omitted).
+- Repository, bugs, and homepage URLs in `package.json` now point to the correct GitHub account.
+- Server version reported over MCP now stays in sync with `package.json`.
+
+### Changed
+- Migrated to the modern `McpServer` API with per-tool Zod input validation (arguments are now validated before reaching Google APIs).
+- Updated all dependencies; `npm audit` is clean (previously 11 vulnerabilities, 5 high).
+- Requires Node.js >= 20 (Node 18 is end-of-life).
+- Removed unused `dotenv` dependency.
+- Read-only tools are now annotated with `readOnlyHint` for MCP clients.
+
+### Added
+- Unit tests (Vitest) covering report limits, funnel request shaping, property listing, and Measurement Protocol payloads.
+- Continuous integration with GitHub Actions (build, tests, and dependency audit on Node 20 and 22).
+
 ## [1.0.0] - 2024-01-15
 
 ### Added
@@ -79,6 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **1.1.0** - Funnel and property listing fixes, enforced row limits, dependency updates, tests and CI
 - **1.0.0** - Initial release with core Data API and Measurement Protocol support
 
 ---

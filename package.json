@@ -1,6 +1,6 @@
 {
   "name": "mcp-google-analytics",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "MCP server for Google Analytics Data API and Measurement Protocol - Read reports and send events",
   "keywords": [
     "mcp",
@@ -25,28 +25,29 @@
     "build": "tsc && chmod +x build/index.js",
     "prepare": "npm run build",
     "watch": "tsc --watch",
-    "dev": "npm run build && node build/index.js"
+    "dev": "npm run build && node build/index.js",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.4",
-    "axios": "^1.7.9",
-    "google-auth-library": "^9.15.0",
-    "zod": "^3.24.1",
-    "dotenv": "^16.4.5"
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "axios": "^1.19.0",
+    "google-auth-library": "^11.0.0",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2",
-    "typescript": "^5.7.2"
+    "@types/node": "^22.20.1",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.10"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/leosepulveda/mcp-google-analytics.git"
+    "url": "https://github.com/leonardosepulvedat/mcp-google-analytics.git"
   },
   "bugs": {
-    "url": "https://github.com/leosepulveda/mcp-google-analytics/issues"
+    "url": "https://github.com/leonardosepulvedat/mcp-google-analytics/issues"
   },
-  "homepage": "https://github.com/leosepulveda/mcp-google-analytics#readme"
+  "homepage": "https://github.com/leonardosepulvedat/mcp-google-analytics#readme"
 }
