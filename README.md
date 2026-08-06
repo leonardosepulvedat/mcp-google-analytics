@@ -158,6 +158,36 @@ Restart Cursor after updating the configuration.
 
 ## 🛠️ Available Tools
 
+### At a Glance
+
+**Reading data (Google Analytics Data API)** — all read tools default to 10 rows to save tokens:
+
+| Tool | Purpose | Notes |
+|---|---|---|
+| `ga_run_report` | Custom reports with dimensions and metrics | Adjust `limit` as needed |
+| `ga_run_realtime_report` | Real-time data (last 30 minutes) | Great for verifying sent events |
+| `ga_get_metadata` | All available dimensions and metrics | Large response (500+ items), use sparingly |
+| `ga_list_accounts` | List accessible GA accounts | |
+| `ga_list_properties` | List GA4 properties | Aggregates all accounts if no `accountId` |
+| `ga_get_property` | Details of the configured property | |
+| `ga_list_data_streams` | Data streams of the property | Useful to find measurement IDs |
+| `ga_run_pivot_report` | Pivot table reports | Responses can be very large |
+| `ga_run_funnel_report` | Funnel analysis across event steps | Uses Data API v1alpha |
+| `ga_batch_run_reports` | Multiple reports in one request | 2–5 reports per batch recommended |
+
+**Sending events (Measurement Protocol)**:
+
+| Tool | Purpose |
+|---|---|
+| `ga_send_event` | Any custom GA4 event with parameters |
+| `ga_validate_event` | Test an event against the debug endpoint without recording it |
+| `ga_send_pageview` | Page/screen views |
+| `ga_send_purchase` | Ecommerce purchases with transaction and items |
+| `ga_send_login` | User logins |
+| `ga_send_signup` | User registrations |
+| `ga_send_add_to_cart` | Add-to-cart events |
+| `ga_send_begin_checkout` | Checkout initiations |
+
 ### Google Analytics Data API (Reading Data)
 
 #### `ga_run_report`
@@ -243,6 +273,11 @@ Run multiple reports in a single request.
 **Warning**: Can return large datasets. Limit to 2-5 reports per batch.
 
 ### Measurement Protocol (Sending Events)
+
+> **Good to know**:
+> - Events take a few minutes to appear in standard reports, but show up almost immediately in the realtime report (`ga_run_realtime_report`).
+> - Use `ga_validate_event` to test new events without recording them.
+> - If you omit `client_id`, one is auto-generated per call. To have GA group several events (e.g., a cart-to-purchase flow) into the same session and user, pass the **same `client_id`** to every call.
 
 #### `ga_send_event`
 Send custom events to GA4.
@@ -347,6 +382,98 @@ Claude will use `ga_send_purchase`:
   }]
 }
 ```
+
+### Example: Validate an event before sending it
+
+Recommended before wiring up any new event: the debug endpoint checks the payload without recording anything.
+
+```
+Validate this tutorial_complete event before we send it for real
+```
+
+Claude will use `ga_validate_event`:
+```json
+{
+  "client_id": "test.123",
+  "events": [{
+    "name": "tutorial_complete",
+    "params": {"tutorial_id": "onboarding", "duration_seconds": 120}
+  }]
+}
+```
+
+The response lists validation messages; an empty list means the event is well-formed.
+
+### Example: Server-side conversion tracking
+
+Track signups or logins that happen in your backend, where no JavaScript tag runs:
+
+```
+A user just registered with Google OAuth, record the signup in Analytics
+```
+
+Claude will use `ga_send_signup`:
+```json
+{
+  "user_id": "user_789",
+  "method": "Google"
+}
+```
+
+### Example: Full ecommerce funnel from an agent
+
+Send the same `client_id` on each call so GA groups the events into one session:
+
+```
+Track this user's journey: they added a $49 course to the cart, started checkout, and completed the purchase
+```
+
+Claude will chain `ga_send_add_to_cart` → `ga_send_begin_checkout` → `ga_send_purchase`, reusing the client ID:
+```json
+{
+  "client_id": "555.1717000000",
+  "currency": "USD",
+  "value": 49,
+  "items": [{"item_id": "course_101", "item_name": "Intro Course", "price": 49, "quantity": 1}]
+}
+```
+
+### Example: Custom events from automations
+
+Measure things GA never sees natively, like AI agent activity or scheduled jobs:
+
+```
+Log that the weekly report generator ran successfully
+```
+
+Claude will use `ga_send_event`:
+```json
+{
+  "events": [{
+    "name": "automation_run",
+    "params": {"job": "weekly_report", "status": "success", "duration_ms": 5400}
+  }]
+}
+```
+
+### Example: Send and verify in one conversation
+
+Combine both APIs to confirm your tracking works end to end:
+
+```
+Send a test event and confirm Analytics received it
+```
+
+Claude will call `ga_send_event`, then check with `ga_run_realtime_report`:
+```json
+{
+  "dimensions": [{"name": "eventName"}],
+  "metrics": [{"name": "eventCount"}],
+  "limit": 10
+}
+```
+
+Measurement Protocol events appear in the realtime report within seconds, while standard reports can take a few minutes.
 
 ## 🔍 Debugging
 

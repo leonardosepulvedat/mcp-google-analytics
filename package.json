@@ -1,6 +1,6 @@
 {
   "name": "mcp-google-analytics",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "MCP server for Google Analytics Data API and Measurement Protocol - Read reports and send events",
   "keywords": [
     "mcp",

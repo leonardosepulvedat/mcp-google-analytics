@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-08-06
+
+### Changed
+- Documentation only: added an at-a-glance table of all 18 tools, five new Measurement Protocol usage examples (validation, server-side conversions, ecommerce funnel with shared `client_id`, custom automation events, and send-and-verify), and practical notes on event latency and `client_id` session grouping.
+
 ## [1.1.0] - 2026-08-06
 
 ### Fixed
@@ -99,6 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **1.1.1** - Documentation: tools summary table and Measurement Protocol usage examples
 - **1.1.0** - Funnel and property listing fixes, enforced row limits, dependency updates, tests and CI
 - **1.0.0** - Initial release with core Data API and Measurement Protocol support
 
