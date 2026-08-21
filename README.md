@@ -4,6 +4,8 @@ A Model Context Protocol (MCP) server for Google Analytics 4, providing comprehe
 
 **The GA4 MCP that reads AND writes.** Most GA4 MCP servers (including Google's official one) are read-only. This one gives your AI agent the full loop: run reports and funnels, audit your setup (custom dimensions, key events, compatibility checks), send ecommerce and conversion events server-side, and verify them in the realtime report — 26 tools in one `npx` command.
 
+**Built for agencies too**: every read tool accepts an optional `propertyId`, so one conversation can query all your clients' properties — no reconfiguration between clients. See [Multi-Property Mode](#-multi-property-mode-agencies).
+
 [![npm version](https://badge.fury.io/js/mcp-google-analytics.svg)](https://www.npmjs.com/package/mcp-google-analytics)
 [![npm downloads](https://img.shields.io/npm/dm/mcp-google-analytics.svg)](https://www.npmjs.com/package/mcp-google-analytics)
 [![CI](https://github.com/leonardosepulvedat/mcp-google-analytics/actions/workflows/ci.yml/badge.svg)](https://github.com/leonardosepulvedat/mcp-google-analytics/actions/workflows/ci.yml)
@@ -89,12 +91,30 @@ export GA_SERVICE_ACCOUNT_JSON=/path/to/service-account.json
 # Or provide JSON directly:
 # export GA_SERVICE_ACCOUNT_JSON='{"type":"service_account","project_id":"..."}'
 
+# Optional: default property. If omitted, pass "propertyId" per tool call
+# (multi-property mode — see below)
 export GA_PROPERTY_ID=123456789
 
 # For Measurement Protocol (writing)
 export GA_MEASUREMENT_ID=G-XXXXXXXXXX
 export GA_API_SECRET=your-api-secret-here
 ```
+
+## 🏢 Multi-Property Mode (Agencies)
+
+Every read tool accepts an optional `propertyId` argument that overrides the configured `GA_PROPERTY_ID` — so a single conversation can query any property the service account can access, with no reconfiguration between clients.
+
+1. Grant your service account "Viewer" access on each client's GA4 property (or at account level).
+2. Set only `GA_SERVICE_ACCOUNT_JSON` (`GA_PROPERTY_ID` becomes optional — if set, it acts as the default).
+3. Discover properties, then query any of them:
+
+```
+Show me all my accounts and properties          → ga_get_account_summaries
+Compare last week's active users between the    → ga_run_report with propertyId "111111"
+Acme property and the Globex property             and again with propertyId "222222"
+```
+
+`propertyId` accepts both `123456789` and `properties/123456789`. Event sending (Measurement Protocol) remains tied to the configured `GA_MEASUREMENT_ID`/`GA_API_SECRET`, since each data stream has its own secret.
 
 ## 🔌 Integration with Claude Desktop
 

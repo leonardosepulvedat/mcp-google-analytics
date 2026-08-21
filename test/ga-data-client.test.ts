@@ -184,6 +184,40 @@ describe('GADataClient', () => {
     });
   });
 
+  describe('multi-property mode', () => {
+    it('uses the per-call propertyId over the configured default', async () => {
+      await client.runReport(
+        {
+          dateRanges: [{ startDate: 'yesterday', endDate: 'today' }],
+          metrics: [{ name: 'activeUsers' }],
+        },
+        '999999'
+      );
+
+      expect(post.mock.calls[0][0]).toBe('/v1beta/properties/999999:runReport');
+    });
+
+    it('accepts the "properties/123" format and normalizes it', async () => {
+      await client.getMetadata('properties/424242');
+      expect(get).toHaveBeenCalledWith('/v1beta/properties/424242/metadata');
+    });
+
+    it('falls back to the default property when no propertyId is given', async () => {
+      await client.listKeyEvents();
+      expect(get).toHaveBeenCalledWith(`/properties/${PROPERTY_ID}/keyEvents`);
+    });
+
+    it('throws a clear error when there is no property at all', async () => {
+      const noDefault = new GADataClient(SERVICE_ACCOUNT);
+      await expect(
+        noDefault.runReport({
+          dateRanges: [{ startDate: 'yesterday', endDate: 'today' }],
+          metrics: [{ name: 'activeUsers' }],
+        })
+      ).rejects.toThrow('No property ID');
+    });
+  });
+
   describe('error handling', () => {
     it('surfaces the API error message', async () => {
       post.mockRejectedValue({

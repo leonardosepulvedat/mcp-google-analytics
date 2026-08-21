@@ -24,15 +24,19 @@ function initializeClients() {
   const measurementId = process.env.GA_MEASUREMENT_ID;
   const apiSecret = process.env.GA_API_SECRET;
 
-  if (serviceAccountJson && propertyId) {
+  if (serviceAccountJson) {
     try {
       gaDataClient = new GADataClient(serviceAccountJson, propertyId);
-      console.error('✓ Google Analytics Data API client initialized');
+      console.error(
+        propertyId
+          ? `✓ Google Analytics Data API client initialized (default property: ${propertyId})`
+          : '✓ Google Analytics Data API client initialized (multi-property mode: pass propertyId per call)'
+      );
     } catch (error) {
       console.error('✗ Failed to initialize GA Data API client:', error);
     }
   } else {
-    console.error('⚠ GA Data API not configured (missing GA_SERVICE_ACCOUNT_JSON or GA_PROPERTY_ID)');
+    console.error('⚠ GA Data API not configured (missing GA_SERVICE_ACCOUNT_JSON)');
   }
 
   if (measurementId && apiSecret) {
@@ -49,7 +53,9 @@ function initializeClients() {
 
 function requireDataClient(): GADataClient {
   if (!gaDataClient) {
-    throw new Error('GA Data API not configured. Set GA_SERVICE_ACCOUNT_JSON and GA_PROPERTY_ID.');
+    throw new Error(
+      'GA Data API not configured. Set GA_SERVICE_ACCOUNT_JSON (and optionally GA_PROPERTY_ID as the default property).'
+    );
   }
   return gaDataClient;
 }
@@ -75,6 +81,13 @@ const dateRangeSchema = z.object({
 });
 
 const namedFieldSchema = z.object({ name: z.string() });
+
+const propertyIdSchema = z
+  .string()
+  .optional()
+  .describe(
+    'GA4 property ID to query (overrides the default GA_PROPERTY_ID). Accepts "123456789" or "properties/123456789". Use ga_get_account_summaries to discover IDs.'
+  );
 
 const userPropertiesSchema = z
   .record(z.object({ value: z.union([z.string(), z.number()]) }))
@@ -112,10 +125,12 @@ Common metrics: activeUsers, sessions, screenPageViews, conversions, totalRevenu
       orderBys: z.array(z.record(z.any())).optional().describe('Sorting specification'),
       dimensionFilter: z.record(z.any()).optional().describe('Dimension filter expression'),
       metricFilter: z.record(z.any()).optional().describe('Metric filter expression'),
+      propertyId: propertyIdSchema,
     },
     annotations: readOnly,
   },
-  async (args) => jsonResult(await requireDataClient().runReport(args as any))
+  async ({ propertyId, ...args }) =>
+    jsonResult(await requireDataClient().runReport(args as any, propertyId))
 );
 
 server.registerTool(
@@ -131,10 +146,12 @@ Common metrics: activeUsers, screenPageViews, conversions`,
       dimensions: z.array(namedFieldSchema).optional().describe('Dimensions to group by'),
       metrics: z.array(namedFieldSchema).describe('Metrics to measure'),
       limit: z.number().int().positive().optional().describe('Maximum number of rows (default: 10)'),
+      propertyId: propertyIdSchema,
     },
     annotations: readOnly,
   },
-  async (args) => jsonResult(await requireDataClient().runRealtimeReport(args as any))
+  async ({ propertyId, ...args }) =>
+    jsonResult(await requireDataClient().runRealtimeReport(args as any, propertyId))
 );
 
 server.registerTool(
@@ -144,10 +161,10 @@ server.registerTool(
 
 ⚠️ TOKEN OPTIMIZATION: This returns ALL available dimensions and metrics.
 Response can be large (~500+ items). Use sparingly and cache results when possible.`,
-    inputSchema: {},
+    inputSchema: { propertyId: propertyIdSchema },
     annotations: readOnly,
   },
-  async () => jsonResult(await requireDataClient().getMetadata())
+  async ({ propertyId }) => jsonResult(await requireDataClient().getMetadata(propertyId))
 );
 
 server.registerTool(
@@ -180,11 +197,11 @@ accessible accounts are aggregated.`,
 server.registerTool(
   'ga_get_property',
   {
-    description: 'Get details about the configured GA4 property.',
-    inputSchema: {},
+    description: 'Get details about a GA4 property (the configured one, or any accessible property via propertyId).',
+    inputSchema: { propertyId: propertyIdSchema },
     annotations: readOnly,
   },
-  async () => jsonResult(await requireDataClient().getProperty())
+  async ({ propertyId }) => jsonResult(await requireDataClient().getProperty(propertyId))
 );
 
 server.registerTool(
@@ -193,10 +210,10 @@ server.registerTool(
     description: `List data streams for the configured GA4 property.
 
 Use this to find measurement IDs for Measurement Protocol.`,
-    inputSchema: {},
+    inputSchema: { propertyId: propertyIdSchema },
     annotations: readOnly,
   },
-  async () => jsonResult(await requireDataClient().listDataStreams())
+  async ({ propertyId }) => jsonResult(await requireDataClient().listDataStreams(propertyId))
 );
 
 server.registerTool(
@@ -218,10 +235,12 @@ Limit dimensions and use small date ranges. Recommended for analysis, not raw da
           })
         )
         .describe('Pivot specifications with fieldNames'),
+      propertyId: propertyIdSchema,
     },
     annotations: readOnly,
   },
-  async (args) => jsonResult(await requireDataClient().runPivotReport(args as any))
+  async ({ propertyId, ...args }) =>
+    jsonResult(await requireDataClient().runPivotReport(args as any, propertyId))
 );
 
 server.registerTool(
@@ -246,10 +265,12 @@ For advanced matching, pass a full 'filterExpression' instead.`,
         .describe('Steps in the funnel'),
       funnelBreakdown: namedFieldSchema.optional().describe('Optional dimension to break down funnel'),
       funnelVisualizationType: z.enum(['STANDARD_FUNNEL', 'TRENDED_FUNNEL']).optional(),
+      propertyId: propertyIdSchema,
     },
     annotations: readOnly,
   },
-  async (args) => jsonResult(await requireDataClient().runFunnelReport(args as any))
+  async ({ propertyId, ...args }) =>
+    jsonResult(await requireDataClient().runFunnelReport(args as any, propertyId))
 );
 
 server.registerTool(
@@ -261,10 +282,12 @@ server.registerTool(
 Limit to 2-5 reports per batch. Each report should have small limits.`,
     inputSchema: {
       requests: z.array(z.record(z.any())).describe('Array of report requests (same format as ga_run_report)'),
+      propertyId: propertyIdSchema,
     },
     annotations: readOnly,
   },
-  async ({ requests }) => jsonResult(await requireDataClient().batchRunReports(requests as any))
+  async ({ requests, propertyId }) =>
+    jsonResult(await requireDataClient().batchRunReports(requests as any, propertyId))
 );
 
 server.registerTool(
@@ -285,10 +308,10 @@ server.registerTool(
     description: `List all custom dimensions defined for the configured GA4 property.
 
 Use this to discover custom dimension API names (e.g., "customEvent:plan_type") for reports.`,
-    inputSchema: {},
+    inputSchema: { propertyId: propertyIdSchema },
     annotations: readOnly,
   },
-  async () => jsonResult(await requireDataClient().listCustomDimensions())
+  async ({ propertyId }) => jsonResult(await requireDataClient().listCustomDimensions(propertyId))
 );
 
 server.registerTool(
@@ -297,10 +320,10 @@ server.registerTool(
     description: `List all custom metrics defined for the configured GA4 property.
 
 Use this to discover custom metric API names for reports.`,
-    inputSchema: {},
+    inputSchema: { propertyId: propertyIdSchema },
     annotations: readOnly,
   },
-  async () => jsonResult(await requireDataClient().listCustomMetrics())
+  async ({ propertyId }) => jsonResult(await requireDataClient().listCustomMetrics(propertyId))
 );
 
 server.registerTool(
@@ -309,20 +332,20 @@ server.registerTool(
     description: `List the key events (conversions) configured for the GA4 property.
 
 Useful to know which event names count as conversions before building reports or sending events.`,
-    inputSchema: {},
+    inputSchema: { propertyId: propertyIdSchema },
     annotations: readOnly,
   },
-  async () => jsonResult(await requireDataClient().listKeyEvents())
+  async ({ propertyId }) => jsonResult(await requireDataClient().listKeyEvents(propertyId))
 );
 
 server.registerTool(
   'ga_list_google_ads_links',
   {
-    description: 'List Google Ads accounts linked to the configured GA4 property.',
-    inputSchema: {},
+    description: 'List Google Ads accounts linked to a GA4 property.',
+    inputSchema: { propertyId: propertyIdSchema },
     annotations: readOnly,
   },
-  async () => jsonResult(await requireDataClient().listGoogleAdsLinks())
+  async ({ propertyId }) => jsonResult(await requireDataClient().listGoogleAdsLinks(propertyId))
 );
 
 server.registerTool(
@@ -338,10 +361,12 @@ Avoids wasted report requests and token-heavy error loops. Also lists which othe
         .enum(['COMPATIBLE', 'INCOMPATIBLE'])
         .optional()
         .describe('Only return fields with this compatibility (recommended: COMPATIBLE)'),
+      propertyId: propertyIdSchema,
     },
     annotations: readOnly,
   },
-  async (args) => jsonResult(await requireDataClient().checkCompatibility(args as any))
+  async ({ propertyId, ...args }) =>
+    jsonResult(await requireDataClient().checkCompatibility(args as any, propertyId))
 );
 
 // ---------------------------------------------------------------------------

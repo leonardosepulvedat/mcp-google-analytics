@@ -12,12 +12,12 @@ export const DEFAULT_ROW_LIMIT = 10;
 
 export class GADataClient {
   private auth: GoogleAuth;
-  private propertyId: string;
+  private defaultPropertyId?: string;
   private dataClient: AxiosInstance;
   private adminClient: AxiosInstance;
 
-  constructor(serviceAccountJson: string, propertyId: string) {
-    this.propertyId = propertyId;
+  constructor(serviceAccountJson: string, defaultPropertyId?: string) {
+    this.defaultPropertyId = defaultPropertyId;
 
     // Accept either the raw JSON string or a path to the key file
     let credentials;
@@ -59,16 +59,31 @@ export class GADataClient {
     return tokenResponse.token;
   }
 
+  /**
+   * Multi-property support: a per-call propertyId overrides the configured
+   * default. Accepts both "123456789" and "properties/123456789".
+   */
+  private resolveProperty(propertyId?: string): string {
+    const id = propertyId ?? this.defaultPropertyId;
+    if (!id) {
+      throw new Error(
+        'No property ID. Pass "propertyId" in the tool arguments or set GA_PROPERTY_ID. ' +
+          'Use ga_get_account_summaries to discover available property IDs.'
+      );
+    }
+    return id.replace(/^properties\//, '');
+  }
+
   private wrapError(error: any, api: 'Data' | 'Admin'): Error {
     return new Error(
       `GA ${api} API Error: ${error.response?.data?.error?.message || error.message}`
     );
   }
 
-  async runReport(request: RunReportRequest): Promise<any> {
+  async runReport(request: RunReportRequest, propertyId?: string): Promise<any> {
     try {
       const response = await this.dataClient.post(
-        `/v1beta/properties/${this.propertyId}:runReport`,
+        `/v1beta/properties/${this.resolveProperty(propertyId)}:runReport`,
         { ...request, limit: request.limit ?? DEFAULT_ROW_LIMIT }
       );
       return response.data;
@@ -77,17 +92,20 @@ export class GADataClient {
     }
   }
 
-  async runRealtimeReport(request: {
-    dimensions?: Array<{ name: string }>;
-    metrics: Array<{ name: string }>;
-    dimensionFilter?: any;
-    metricFilter?: any;
-    limit?: number;
-    orderBys?: any[];
-  }): Promise<any> {
+  async runRealtimeReport(
+    request: {
+      dimensions?: Array<{ name: string }>;
+      metrics: Array<{ name: string }>;
+      dimensionFilter?: any;
+      metricFilter?: any;
+      limit?: number;
+      orderBys?: any[];
+    },
+    propertyId?: string
+  ): Promise<any> {
     try {
       const response = await this.dataClient.post(
-        `/v1beta/properties/${this.propertyId}:runRealtimeReport`,
+        `/v1beta/properties/${this.resolveProperty(propertyId)}:runRealtimeReport`,
         { ...request, limit: request.limit ?? DEFAULT_ROW_LIMIT }
       );
       return response.data;
@@ -96,10 +114,10 @@ export class GADataClient {
     }
   }
 
-  async runPivotReport(request: RunPivotReportRequest): Promise<any> {
+  async runPivotReport(request: RunPivotReportRequest, propertyId?: string): Promise<any> {
     try {
       const response = await this.dataClient.post(
-        `/v1beta/properties/${this.propertyId}:runPivotReport`,
+        `/v1beta/properties/${this.resolveProperty(propertyId)}:runPivotReport`,
         request
       );
       return response.data;
@@ -114,7 +132,7 @@ export class GADataClient {
    * expression per step. Steps without an explicit filter default to matching
    * an event whose name is the step's `eventName` (or `name`).
    */
-  async runFunnelReport(request: RunFunnelReportRequest): Promise<any> {
+  async runFunnelReport(request: RunFunnelReportRequest, propertyId?: string): Promise<any> {
     const body: Record<string, any> = {
       dateRanges: request.dateRanges,
       funnel: {
@@ -145,7 +163,7 @@ export class GADataClient {
 
     try {
       const response = await this.dataClient.post(
-        `/v1alpha/properties/${this.propertyId}:runFunnelReport`,
+        `/v1alpha/properties/${this.resolveProperty(propertyId)}:runFunnelReport`,
         body
       );
       return response.data;
@@ -154,10 +172,10 @@ export class GADataClient {
     }
   }
 
-  async batchRunReports(requests: RunReportRequest[]): Promise<any> {
+  async batchRunReports(requests: RunReportRequest[], propertyId?: string): Promise<any> {
     try {
       const response = await this.dataClient.post(
-        `/v1beta/properties/${this.propertyId}:batchRunReports`,
+        `/v1beta/properties/${this.resolveProperty(propertyId)}:batchRunReports`,
         {
           requests: requests.map((r) => ({ ...r, limit: r.limit ?? DEFAULT_ROW_LIMIT })),
         }
@@ -168,10 +186,10 @@ export class GADataClient {
     }
   }
 
-  async getMetadata(): Promise<any> {
+  async getMetadata(propertyId?: string): Promise<any> {
     try {
       const response = await this.dataClient.get(
-        `/v1beta/properties/${this.propertyId}/metadata`
+        `/v1beta/properties/${this.resolveProperty(propertyId)}/metadata`
       );
       return response.data;
     } catch (error: any) {
@@ -216,19 +234,21 @@ export class GADataClient {
     }
   }
 
-  async getProperty(): Promise<any> {
+  async getProperty(propertyId?: string): Promise<any> {
     try {
-      const response = await this.adminClient.get(`/properties/${this.propertyId}`);
+      const response = await this.adminClient.get(
+        `/properties/${this.resolveProperty(propertyId)}`
+      );
       return response.data;
     } catch (error: any) {
       throw this.wrapError(error, 'Admin');
     }
   }
 
-  async listDataStreams(): Promise<any> {
+  async listDataStreams(propertyId?: string): Promise<any> {
     try {
       const response = await this.adminClient.get(
-        `/properties/${this.propertyId}/dataStreams`
+        `/properties/${this.resolveProperty(propertyId)}/dataStreams`
       );
       return response.data;
     } catch (error: any) {
@@ -246,10 +266,10 @@ export class GADataClient {
     }
   }
 
-  async listCustomDimensions(): Promise<any> {
+  async listCustomDimensions(propertyId?: string): Promise<any> {
     try {
       const response = await this.adminClient.get(
-        `/properties/${this.propertyId}/customDimensions`
+        `/properties/${this.resolveProperty(propertyId)}/customDimensions`
       );
       return response.data;
     } catch (error: any) {
@@ -257,10 +277,10 @@ export class GADataClient {
     }
   }
 
-  async listCustomMetrics(): Promise<any> {
+  async listCustomMetrics(propertyId?: string): Promise<any> {
     try {
       const response = await this.adminClient.get(
-        `/properties/${this.propertyId}/customMetrics`
+        `/properties/${this.resolveProperty(propertyId)}/customMetrics`
       );
       return response.data;
     } catch (error: any) {
@@ -268,10 +288,10 @@ export class GADataClient {
     }
   }
 
-  async listKeyEvents(): Promise<any> {
+  async listKeyEvents(propertyId?: string): Promise<any> {
     try {
       const response = await this.adminClient.get(
-        `/properties/${this.propertyId}/keyEvents`
+        `/properties/${this.resolveProperty(propertyId)}/keyEvents`
       );
       return response.data;
     } catch (error: any) {
@@ -279,10 +299,10 @@ export class GADataClient {
     }
   }
 
-  async listGoogleAdsLinks(): Promise<any> {
+  async listGoogleAdsLinks(propertyId?: string): Promise<any> {
     try {
       const response = await this.adminClient.get(
-        `/properties/${this.propertyId}/googleAdsLinks`
+        `/properties/${this.resolveProperty(propertyId)}/googleAdsLinks`
       );
       return response.data;
     } catch (error: any) {
@@ -294,14 +314,17 @@ export class GADataClient {
    * Checks whether a dimension/metric combination is valid for this property
    * before spending a report request on it.
    */
-  async checkCompatibility(request: {
-    dimensions?: Array<{ name: string }>;
-    metrics?: Array<{ name: string }>;
-    compatibilityFilter?: 'COMPATIBLE' | 'INCOMPATIBLE';
-  }): Promise<any> {
+  async checkCompatibility(
+    request: {
+      dimensions?: Array<{ name: string }>;
+      metrics?: Array<{ name: string }>;
+      compatibilityFilter?: 'COMPATIBLE' | 'INCOMPATIBLE';
+    },
+    propertyId?: string
+  ): Promise<any> {
     try {
       const response = await this.dataClient.post(
-        `/v1beta/properties/${this.propertyId}:checkCompatibility`,
+        `/v1beta/properties/${this.resolveProperty(propertyId)}:checkCompatibility`,
         request
       );
       return response.data;

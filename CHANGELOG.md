@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-08-21
+
+### Added
+- **Multi-property mode (agencies)**: every read tool now accepts an optional `propertyId` argument that overrides the configured `GA_PROPERTY_ID`, so one conversation can query any property the service account can access. Accepts both `123456789` and `properties/123456789` formats.
+- `GA_PROPERTY_ID` is now optional: with only `GA_SERVICE_ACCOUNT_JSON` set, read tools work by passing `propertyId` per call, with a clear error message when neither is provided.
+
 ## [1.2.1] - 2026-08-21
 
 ### Added
@@ -120,6 +126,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **1.3.0** - Multi-property mode: optional propertyId per read tool, GA_PROPERTY_ID now optional
+- **1.2.1** - MCP Registry manifest and one-click install button
 - **1.2.0** - 8 new tools: account summaries, custom dimensions/metrics, key events, Ads links, compatibility check, view_item and refund
 - **1.1.1** - Documentation: tools summary table and Measurement Protocol usage examples
 - **1.1.0** - Funnel and property listing fixes, enforced row limits, dependency updates, tests and CI
