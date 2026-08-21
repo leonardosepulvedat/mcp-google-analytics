@@ -2,6 +2,8 @@
 
 A Model Context Protocol (MCP) server for Google Analytics 4, providing comprehensive integration with both the **Google Analytics Data API** (for reading reports) and **Measurement Protocol v2** (for sending events).
 
+**The GA4 MCP that reads AND writes.** Most GA4 MCP servers (including Google's official one) are read-only. This one gives your AI agent the full loop: run reports and funnels, audit your setup (custom dimensions, key events, compatibility checks), send ecommerce and conversion events server-side, and verify them in the realtime report — 26 tools in one `npx` command.
+
 [![npm version](https://badge.fury.io/js/mcp-google-analytics.svg)](https://www.npmjs.com/package/mcp-google-analytics)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -174,6 +176,12 @@ Restart Cursor after updating the configuration.
 | `ga_run_pivot_report` | Pivot table reports | Responses can be very large |
 | `ga_run_funnel_report` | Funnel analysis across event steps | Uses Data API v1alpha |
 | `ga_batch_run_reports` | Multiple reports in one request | 2–5 reports per batch recommended |
+| `ga_get_account_summaries` | All accounts and properties in one call | Fastest way to discover IDs |
+| `ga_list_custom_dimensions` | Custom dimensions of the property | Discover API names for reports |
+| `ga_list_custom_metrics` | Custom metrics of the property | Discover API names for reports |
+| `ga_list_key_events` | Key events (conversions) of the property | Know what counts as a conversion |
+| `ga_list_google_ads_links` | Google Ads accounts linked to the property | |
+| `ga_check_compatibility` | Validate dimension/metric combos before reporting | Avoids wasted requests and error loops |
 
 **Sending events (Measurement Protocol)**:
 
@@ -185,8 +193,10 @@ Restart Cursor after updating the configuration.
 | `ga_send_purchase` | Ecommerce purchases with transaction and items |
 | `ga_send_login` | User logins |
 | `ga_send_signup` | User registrations |
+| `ga_send_view_item` | Product/item detail views |
 | `ga_send_add_to_cart` | Add-to-cart events |
 | `ga_send_begin_checkout` | Checkout initiations |
+| `ga_send_refund` | Full or partial refunds |
 
 ### Google Analytics Data API (Reading Data)
 
@@ -272,6 +282,30 @@ Run multiple reports in a single request.
 
 **Warning**: Can return large datasets. Limit to 2-5 reports per batch.
 
+#### `ga_get_account_summaries`
+Get all accessible accounts with their properties in a single compact call. The fastest way to discover account and property IDs.
+
+#### `ga_list_custom_dimensions` / `ga_list_custom_metrics`
+List the custom dimensions and metrics defined for the property, including their API names (e.g., `customEvent:plan_type`) so you can use them in reports.
+
+#### `ga_list_key_events`
+List the key events (conversions) configured for the property — useful before building conversion reports or deciding which events to send.
+
+#### `ga_list_google_ads_links`
+List Google Ads accounts linked to the property.
+
+#### `ga_check_compatibility`
+Check whether a dimension/metric combination is valid **before** running a report, avoiding wasted requests and token-heavy error loops.
+
+**Example**:
+```typescript
+{
+  "dimensions": [{"name": "city"}],
+  "metrics": [{"name": "activeUsers"}],
+  "compatibilityFilter": "COMPATIBLE"
+}
+```
+
 ### Measurement Protocol (Sending Events)
 
 > **Good to know**:
@@ -335,11 +369,27 @@ Send login events.
 #### `ga_send_signup`
 Send user registration events.
 
+#### `ga_send_view_item`
+Send product/item detail view events. Completes the standard ecommerce funnel: `view_item` → `add_to_cart` → `begin_checkout` → `purchase`.
+
 #### `ga_send_add_to_cart`
 Send add-to-cart events.
 
 #### `ga_send_begin_checkout`
 Send checkout initiation events.
+
+#### `ga_send_refund`
+Send full or partial refund events. Use the same `transaction_id` as the original purchase; omit `items` for a full refund, include them for a partial one.
+
+**Example (partial refund)**:
+```typescript
+{
+  "transaction_id": "T12345",
+  "currency": "USD",
+  "value": 49.99,
+  "items": [{"item_id": "SKU123", "quantity": 1}]
+}
+```
 
 ## 📖 Usage Examples
 

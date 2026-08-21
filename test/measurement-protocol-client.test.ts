@@ -87,6 +87,54 @@ describe('MeasurementProtocolClient', () => {
     });
   });
 
+  describe('sendViewItem', () => {
+    it('builds a view_item event with items', async () => {
+      await client.sendViewItem({
+        clientId: 'client.1',
+        currency: 'USD',
+        value: 49,
+        items: [{ item_id: 'course_101', item_name: 'Intro Course', price: 49, quantity: 1 }],
+      });
+
+      const [, body] = post.mock.calls[0];
+      expect(body.events[0].name).toBe('view_item');
+      expect(body.events[0].params).toMatchObject({ currency: 'USD', value: 49 });
+      expect(body.events[0].params.items).toHaveLength(1);
+    });
+  });
+
+  describe('sendRefund', () => {
+    it('omits items for a full refund', async () => {
+      await client.sendRefund({
+        clientId: 'client.1',
+        transactionId: 'T-100',
+        currency: 'USD',
+        value: 99.9,
+      });
+
+      const [, body] = post.mock.calls[0];
+      expect(body.events[0].name).toBe('refund');
+      expect(body.events[0].params).toEqual({
+        transaction_id: 'T-100',
+        currency: 'USD',
+        value: 99.9,
+      });
+    });
+
+    it('includes items for a partial refund', async () => {
+      await client.sendRefund({
+        clientId: 'client.1',
+        transactionId: 'T-100',
+        currency: 'USD',
+        value: 49,
+        items: [{ item_id: 'sku-1', quantity: 1 }],
+      });
+
+      const [, body] = post.mock.calls[0];
+      expect(body.events[0].params.items).toEqual([{ item_id: 'sku-1', quantity: 1 }]);
+    });
+  });
+
   describe('error handling', () => {
     it('surfaces the API error message', async () => {
       post.mockRejectedValue({

@@ -53,7 +53,7 @@ mcp-ga4/
 7. ✅ `ga_send_add_to_cart` - Add to cart events
 8. ✅ `ga_send_begin_checkout` - Checkout initiation
 
-**Total: 18 MCP tools**
+**Total: 26 MCP tools**
 
 ## 🔧 Technical Implementation
 
@@ -91,7 +91,7 @@ mcp-ga4/
    - Installation instructions (npm + npx)
    - Configuration for Claude Desktop and Cursor
    - Service account setup guide
-   - All 18 tools documented
+   - All 26 tools documented
    - Usage examples
 
 2. ✅ **QUICKSTART.md** - 5-minute setup guide with:
@@ -172,7 +172,7 @@ Google Analytics 4 integration with Data API and Measurement Protocol
 - Read GA4 reports, real-time data, and metadata
 - Send events via Measurement Protocol
 - Token-optimized queries
-- 18 tools for comprehensive analytics
+- 26 tools for comprehensive analytics
 
 **Installation:**
 ```bash

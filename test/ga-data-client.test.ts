@@ -147,6 +147,43 @@ describe('GADataClient', () => {
     });
   });
 
+  describe('admin read methods', () => {
+    it('fetches account summaries in a single call', async () => {
+      await client.getAccountSummaries();
+      expect(get).toHaveBeenCalledWith('/accountSummaries');
+    });
+
+    it('lists custom dimensions, custom metrics, key events, and Ads links for the property', async () => {
+      await client.listCustomDimensions();
+      await client.listCustomMetrics();
+      await client.listKeyEvents();
+      await client.listGoogleAdsLinks();
+
+      expect(get).toHaveBeenCalledWith(`/properties/${PROPERTY_ID}/customDimensions`);
+      expect(get).toHaveBeenCalledWith(`/properties/${PROPERTY_ID}/customMetrics`);
+      expect(get).toHaveBeenCalledWith(`/properties/${PROPERTY_ID}/keyEvents`);
+      expect(get).toHaveBeenCalledWith(`/properties/${PROPERTY_ID}/googleAdsLinks`);
+    });
+  });
+
+  describe('checkCompatibility', () => {
+    it('posts the field combination to the compatibility endpoint', async () => {
+      await client.checkCompatibility({
+        dimensions: [{ name: 'city' }],
+        metrics: [{ name: 'activeUsers' }],
+        compatibilityFilter: 'COMPATIBLE',
+      });
+
+      const [url, body] = post.mock.calls[0];
+      expect(url).toBe(`/v1beta/properties/${PROPERTY_ID}:checkCompatibility`);
+      expect(body).toEqual({
+        dimensions: [{ name: 'city' }],
+        metrics: [{ name: 'activeUsers' }],
+        compatibilityFilter: 'COMPATIBLE',
+      });
+    });
+  });
+
   describe('error handling', () => {
     it('surfaces the API error message', async () => {
       post.mockRejectedValue({

@@ -235,4 +235,78 @@ export class GADataClient {
       throw this.wrapError(error, 'Admin');
     }
   }
+
+  /** Compact overview of every accessible account with its properties, in one call. */
+  async getAccountSummaries(): Promise<any> {
+    try {
+      const response = await this.adminClient.get('/accountSummaries');
+      return response.data;
+    } catch (error: any) {
+      throw this.wrapError(error, 'Admin');
+    }
+  }
+
+  async listCustomDimensions(): Promise<any> {
+    try {
+      const response = await this.adminClient.get(
+        `/properties/${this.propertyId}/customDimensions`
+      );
+      return response.data;
+    } catch (error: any) {
+      throw this.wrapError(error, 'Admin');
+    }
+  }
+
+  async listCustomMetrics(): Promise<any> {
+    try {
+      const response = await this.adminClient.get(
+        `/properties/${this.propertyId}/customMetrics`
+      );
+      return response.data;
+    } catch (error: any) {
+      throw this.wrapError(error, 'Admin');
+    }
+  }
+
+  async listKeyEvents(): Promise<any> {
+    try {
+      const response = await this.adminClient.get(
+        `/properties/${this.propertyId}/keyEvents`
+      );
+      return response.data;
+    } catch (error: any) {
+      throw this.wrapError(error, 'Admin');
+    }
+  }
+
+  async listGoogleAdsLinks(): Promise<any> {
+    try {
+      const response = await this.adminClient.get(
+        `/properties/${this.propertyId}/googleAdsLinks`
+      );
+      return response.data;
+    } catch (error: any) {
+      throw this.wrapError(error, 'Admin');
+    }
+  }
+
+  /**
+   * Checks whether a dimension/metric combination is valid for this property
+   * before spending a report request on it.
+   */
+  async checkCompatibility(request: {
+    dimensions?: Array<{ name: string }>;
+    metrics?: Array<{ name: string }>;
+    compatibilityFilter?: 'COMPATIBLE' | 'INCOMPATIBLE';
+  }): Promise<any> {
+    try {
+      const response = await this.dataClient.post(
+        `/v1beta/properties/${this.propertyId}:checkCompatibility`,
+        request
+      );
+      return response.data;
+    } catch (error: any) {
+      throw this.wrapError(error, 'Data');
+    }
+  }
 }

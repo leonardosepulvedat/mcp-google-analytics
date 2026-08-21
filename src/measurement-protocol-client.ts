@@ -230,6 +230,65 @@ export class MeasurementProtocolClient {
     return this.sendEvent(event);
   }
 
+  async sendViewItem(params: {
+    clientId?: string;
+    userId?: string;
+    currency: string;
+    value: number;
+    items: EcommerceItem[];
+    userProperties?: Record<string, { value: string | number }>;
+  }): Promise<any> {
+    const event: MeasurementProtocolEvent = {
+      client_id: params.clientId || this.generateClientId(),
+      user_id: params.userId,
+      user_properties: params.userProperties,
+      events: [
+        {
+          name: 'view_item',
+          params: {
+            currency: params.currency,
+            value: params.value,
+            items: params.items,
+          } as any,
+        },
+      ],
+    };
+
+    return this.sendEvent(event);
+  }
+
+  async sendRefund(params: {
+    clientId?: string;
+    userId?: string;
+    transactionId: string;
+    currency?: string;
+    value?: number;
+    items?: EcommerceItem[];
+    userProperties?: Record<string, { value: string | number }>;
+  }): Promise<any> {
+    const eventParams: Record<string, any> = {
+      transaction_id: params.transactionId,
+    };
+    if (params.currency) eventParams.currency = params.currency;
+    if (params.value !== undefined) eventParams.value = params.value;
+    // Items are only needed for partial refunds; omit them for full refunds
+    if (params.items && params.items.length > 0) eventParams.items = params.items;
+
+    const event: MeasurementProtocolEvent = {
+      client_id: params.clientId || this.generateClientId(),
+      user_id: params.userId,
+      user_properties: params.userProperties,
+      events: [
+        {
+          name: 'refund',
+          params: eventParams,
+        },
+      ],
+    };
+
+    return this.sendEvent(event);
+  }
+
   private generateClientId(): string {
     // Generate a random client ID similar to GA's format
     const timestamp = Date.now();

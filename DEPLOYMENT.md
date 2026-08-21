@@ -115,7 +115,7 @@ Google Analytics 4 integration with Data API and Measurement Protocol.
 - Read GA4 reports, real-time data, funnel analysis, and metadata
 - Send events via Measurement Protocol (pageviews, purchases, custom events)
 - Token-optimized queries with smart defaults
-- 18 comprehensive tools
+- 26 comprehensive tools
 - Supports both Claude Desktop and Cursor
 
 **Installation:**

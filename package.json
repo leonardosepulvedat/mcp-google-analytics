@@ -1,7 +1,7 @@
 {
   "name": "mcp-google-analytics",
-  "version": "1.1.1",
-  "description": "MCP server for Google Analytics Data API and Measurement Protocol - Read reports and send events",
+  "version": "1.2.0",
+  "description": "GA4 MCP server that reads AND writes: run reports and funnels (Data API), audit your setup (custom dimensions, key events, compatibility checks), and send events server-side (Measurement Protocol v2)",
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -10,7 +10,11 @@
     "analytics",
     "measurement-protocol",
     "claude",
-    "cursor"
+    "cursor",
+    "ga4-mcp",
+    "google-analytics-data-api",
+    "server-side-tracking",
+    "ecommerce-events"
   ],
   "author": "Leonardo Sepúlveda <lsepulvedatabares@gmail.com>",
   "license": "MIT",

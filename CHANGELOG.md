@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-08-21
+
+### Added
+- 6 new read tools (Admin/Data API, all read-only): `ga_get_account_summaries` (all accounts and properties in one call), `ga_list_custom_dimensions`, `ga_list_custom_metrics`, `ga_list_key_events` (conversions), `ga_list_google_ads_links`, and `ga_check_compatibility` (validate dimension/metric combos before running a report).
+- 2 new Measurement Protocol tools completing the ecommerce lifecycle: `ga_send_view_item` and `ga_send_refund` (full or partial refunds).
+- Unit tests for all new client methods.
+
+### Changed
+- npm description and keywords now highlight the differentiator: the GA4 MCP that reads AND writes (26 tools total).
+
 ## [1.1.1] - 2026-08-06
 
 ### Changed
@@ -104,6 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **1.2.0** - 8 new tools: account summaries, custom dimensions/metrics, key events, Ads links, compatibility check, view_item and refund
 - **1.1.1** - Documentation: tools summary table and Measurement Protocol usage examples
 - **1.1.0** - Funnel and property listing fixes, enforced row limits, dependency updates, tests and CI
 - **1.0.0** - Initial release with core Data API and Measurement Protocol support

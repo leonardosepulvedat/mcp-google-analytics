@@ -267,6 +267,83 @@ Limit to 2-5 reports per batch. Each report should have small limits.`,
   async ({ requests }) => jsonResult(await requireDataClient().batchRunReports(requests as any))
 );
 
+server.registerTool(
+  'ga_get_account_summaries',
+  {
+    description: `Get a compact overview of all accessible GA accounts and their properties in a single call.
+
+The fastest way to discover account IDs, property IDs, and property names.`,
+    inputSchema: {},
+    annotations: readOnly,
+  },
+  async () => jsonResult(await requireDataClient().getAccountSummaries())
+);
+
+server.registerTool(
+  'ga_list_custom_dimensions',
+  {
+    description: `List all custom dimensions defined for the configured GA4 property.
+
+Use this to discover custom dimension API names (e.g., "customEvent:plan_type") for reports.`,
+    inputSchema: {},
+    annotations: readOnly,
+  },
+  async () => jsonResult(await requireDataClient().listCustomDimensions())
+);
+
+server.registerTool(
+  'ga_list_custom_metrics',
+  {
+    description: `List all custom metrics defined for the configured GA4 property.
+
+Use this to discover custom metric API names for reports.`,
+    inputSchema: {},
+    annotations: readOnly,
+  },
+  async () => jsonResult(await requireDataClient().listCustomMetrics())
+);
+
+server.registerTool(
+  'ga_list_key_events',
+  {
+    description: `List the key events (conversions) configured for the GA4 property.
+
+Useful to know which event names count as conversions before building reports or sending events.`,
+    inputSchema: {},
+    annotations: readOnly,
+  },
+  async () => jsonResult(await requireDataClient().listKeyEvents())
+);
+
+server.registerTool(
+  'ga_list_google_ads_links',
+  {
+    description: 'List Google Ads accounts linked to the configured GA4 property.',
+    inputSchema: {},
+    annotations: readOnly,
+  },
+  async () => jsonResult(await requireDataClient().listGoogleAdsLinks())
+);
+
+server.registerTool(
+  'ga_check_compatibility',
+  {
+    description: `Check whether a combination of dimensions and metrics is valid for this property BEFORE running a report.
+
+Avoids wasted report requests and token-heavy error loops. Also lists which other fields remain compatible with the given combination.`,
+    inputSchema: {
+      dimensions: z.array(namedFieldSchema).optional().describe('Dimensions to check (e.g., [{name: "city"}])'),
+      metrics: z.array(namedFieldSchema).optional().describe('Metrics to check (e.g., [{name: "activeUsers"}])'),
+      compatibilityFilter: z
+        .enum(['COMPATIBLE', 'INCOMPATIBLE'])
+        .optional()
+        .describe('Only return fields with this compatibility (recommended: COMPATIBLE)'),
+    },
+    annotations: readOnly,
+  },
+  async (args) => jsonResult(await requireDataClient().checkCompatibility(args as any))
+);
+
 // ---------------------------------------------------------------------------
 // Measurement Protocol tools
 // ---------------------------------------------------------------------------
@@ -487,6 +564,69 @@ Ecommerce event for tracking when users start the checkout process.`,
         value: args.value,
         items: args.items,
         coupon: args.coupon,
+        userProperties: args.user_properties,
+      })
+    )
+);
+
+server.registerTool(
+  'ga_send_view_item',
+  {
+    description: `Send a view item event to Google Analytics.
+
+Ecommerce event for tracking product/item detail views. Completes the standard
+funnel: view_item → add_to_cart → begin_checkout → purchase.`,
+    inputSchema: {
+      client_id: z.string().optional(),
+      user_id: z.string().optional(),
+      currency: z.string().describe('Currency code'),
+      value: z.number().describe('Value of the viewed item(s)'),
+      items: z.array(EcommerceItemSchema).describe('Items viewed'),
+      user_properties: userPropertiesSchema,
+    },
+    annotations: sendsData,
+  },
+  async (args) =>
+    jsonResult(
+      await requireMpClient().sendViewItem({
+        clientId: args.client_id,
+        userId: args.user_id,
+        currency: args.currency,
+        value: args.value,
+        items: args.items,
+        userProperties: args.user_properties,
+      })
+    )
+);
+
+server.registerTool(
+  'ga_send_refund',
+  {
+    description: `Send a refund event to Google Analytics.
+
+Ecommerce event for full or partial refunds. Omit 'items' for a full refund;
+include them (with quantities) for a partial refund. Use the same transaction_id
+as the original purchase.`,
+    inputSchema: {
+      client_id: z.string().optional(),
+      user_id: z.string().optional(),
+      transaction_id: z.string().describe('Transaction ID of the original purchase'),
+      currency: z.string().optional().describe('Currency code'),
+      value: z.number().optional().describe('Refunded amount'),
+      items: z.array(EcommerceItemSchema).optional().describe('Refunded items (only for partial refunds)'),
+      user_properties: userPropertiesSchema,
+    },
+    annotations: sendsData,
+  },
+  async (args) =>
+    jsonResult(
+      await requireMpClient().sendRefund({
+        clientId: args.client_id,
+        userId: args.user_id,
+        transactionId: args.transaction_id,
+        currency: args.currency,
+        value: args.value,
+        items: args.items,
         userProperties: args.user_properties,
       })
     )
