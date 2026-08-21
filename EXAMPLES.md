@@ -393,6 +393,107 @@ Compara los usuarios activos de esta semana con la semana pasada
 }
 ```
 
+## 🧭 Descubrimiento y Auditoría de la Propiedad
+
+### Ejemplo 17: Ver todas mis cuentas y propiedades
+
+**Pregunta a Claude**:
+```
+¿A qué cuentas y propiedades de Google Analytics tengo acceso?
+```
+
+**Herramienta**: `ga_get_account_summaries`
+
+Devuelve en una sola llamada todas las cuentas accesibles con sus propiedades, incluyendo los identificadores que necesitas para configurar el servidor.
+
+### Ejemplo 18: Descubrir dimensiones y métricas personalizadas
+
+**Pregunta a Claude**:
+```
+¿Qué dimensiones y métricas personalizadas tiene configuradas mi propiedad?
+```
+
+**Herramientas**: `ga_list_custom_dimensions` y `ga_list_custom_metrics`
+
+Devuelven los nombres de API (por ejemplo, `customEvent:plan_type`) que luego puedes usar directamente en cualquier reporte.
+
+### Ejemplo 19: Saber qué cuenta como conversión
+
+**Pregunta a Claude**:
+```
+¿Qué eventos están marcados como conversiones en mi propiedad?
+```
+
+**Herramienta**: `ga_list_key_events`
+
+Útil antes de armar reportes de conversión o de decidir qué eventos enviar por Measurement Protocol.
+
+### Ejemplo 20: Verificar compatibilidad antes de un reporte
+
+**Pregunta a Claude**:
+```
+¿Puedo combinar la dimensión "city" con la métrica "activeUsers" en un reporte?
+```
+
+**Herramienta**: `ga_check_compatibility`
+
+```json
+{
+  "dimensions": [{"name": "city"}],
+  "metrics": [{"name": "activeUsers"}],
+  "compatibilityFilter": "COMPATIBLE"
+}
+```
+
+Valida la combinación **antes** de gastar una consulta, y lista qué otros campos siguen siendo compatibles. Evita los ciclos de prueba y error que consumen tokens.
+
+## 🛒 Ciclo de Comercio Completo
+
+Con `ga_send_view_item` y `ga_send_refund` puedes registrar el ciclo entero: vista de producto → carrito → checkout → compra → reembolso. Recuerda usar el **mismo `client_id`** en cada paso para que GA los agrupe en una sesión.
+
+### Ejemplo 21: Registrar vista de producto
+
+**Pregunta a Claude**:
+```
+Registra que el usuario vio el producto "Zapatillas Running" de $79.99
+```
+
+**Herramienta**: `ga_send_view_item`
+
+```json
+{
+  "client_id": "555.1717000000",
+  "currency": "USD",
+  "value": 79.99,
+  "items": [{
+    "item_id": "PROD-456",
+    "item_name": "Zapatillas Running",
+    "price": 79.99,
+    "quantity": 1
+  }]
+}
+```
+
+### Ejemplo 22: Registrar un reembolso
+
+**Pregunta a Claude**:
+```
+Registra un reembolso parcial de $79.99 de la orden ORD-12345
+```
+
+**Herramienta**: `ga_send_refund`
+
+```json
+{
+  "transaction_id": "ORD-12345",
+  "currency": "USD",
+  "value": 79.99,
+  "items": [{"item_id": "PROD-456", "quantity": 1}]
+}
+```
+
+Usa el mismo `transaction_id` de la compra original. Para un reembolso total, omite `items`.
+
 ## 💡 Tips para Optimización
 
 ### ✅ Buenas Prácticas
