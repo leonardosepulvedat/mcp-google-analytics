@@ -1,0 +1,50 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.leonardosepulvedat/mcp-google-analytics",
+  "description": "GA4 MCP that reads AND writes: reports, funnels, audits, and server-side events. 26 tools.",
+  "repository": {
+    "url": "https://github.com/leonardosepulvedat/mcp-google-analytics",
+    "source": "github"
+  },
+  "version": "1.2.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "mcp-google-analytics",
+      "version": "1.2.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "GA_SERVICE_ACCOUNT_JSON",
+          "description": "Service account JSON for reading reports: file path or inline JSON (needed for read tools)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "GA_PROPERTY_ID",
+          "description": "Numeric GA4 property ID, e.g. 123456789 (needed for read tools)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "GA_MEASUREMENT_ID",
+          "description": "Measurement ID of the data stream, e.g. G-XXXXXXXXXX (needed for event-sending tools)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "GA_API_SECRET",
+          "description": "Measurement Protocol API secret (needed for event-sending tools)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

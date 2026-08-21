@@ -5,7 +5,15 @@ A Model Context Protocol (MCP) server for Google Analytics 4, providing comprehe
 **The GA4 MCP that reads AND writes.** Most GA4 MCP servers (including Google's official one) are read-only. This one gives your AI agent the full loop: run reports and funnels, audit your setup (custom dimensions, key events, compatibility checks), send ecommerce and conversion events server-side, and verify them in the realtime report — 26 tools in one `npx` command.
 
 [![npm version](https://badge.fury.io/js/mcp-google-analytics.svg)](https://www.npmjs.com/package/mcp-google-analytics)
+[![npm downloads](https://img.shields.io/npm/dm/mcp-google-analytics.svg)](https://www.npmjs.com/package/mcp-google-analytics)
+[![CI](https://github.com/leonardosepulvedat/mcp-google-analytics/actions/workflows/ci.yml/badge.svg)](https://github.com/leonardosepulvedat/mcp-google-analytics/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## ⚡ One-Click Install
+
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=google-analytics&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1nb29nbGUtYW5hbHl0aWNzIl0sImVudiI6eyJHQV9TRVJWSUNFX0FDQ09VTlRfSlNPTiI6Ii9wYXRoL3RvL3NlcnZpY2UtYWNjb3VudC5qc29uIiwiR0FfUFJPUEVSVFlfSUQiOiIxMjM0NTY3ODkiLCJHQV9NRUFTVVJFTUVOVF9JRCI6IkctWFhYWFhYWFhYWCIsIkdBX0FQSV9TRUNSRVQiOiJ5b3VyLWFwaS1zZWNyZXQifX0=)
+
+Click **Install in Cursor** above, approve, then replace the placeholder values in `~/.cursor/mcp.json` with your real credentials (see [Configuration](#-configuration) below).
 
 ## ⚡ Token Optimization - READ THIS FIRST!
 

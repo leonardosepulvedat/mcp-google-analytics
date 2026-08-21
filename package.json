@@ -1,6 +1,6 @@
 {
   "name": "mcp-google-analytics",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "GA4 MCP server that reads AND writes: run reports and funnels (Data API), audit your setup (custom dimensions, key events, compatibility checks), and send events server-side (Measurement Protocol v2)",
   "keywords": [
     "mcp",
@@ -53,5 +53,6 @@
   "bugs": {
     "url": "https://github.com/leonardosepulvedat/mcp-google-analytics/issues"
   },
-  "homepage": "https://github.com/leonardosepulvedat/mcp-google-analytics#readme"
+  "homepage": "https://github.com/leonardosepulvedat/mcp-google-analytics#readme",
+  "mcpName": "io.github.leonardosepulvedat/mcp-google-analytics"
 }
