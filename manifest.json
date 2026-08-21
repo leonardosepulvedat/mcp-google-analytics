@@ -1,12 +1,12 @@
 {
   "manifest_version": "0.2",
   "name": "mcp-google-analytics",
-  "display_name": "Google Analytics (GA4) — Read & Write",
+  "display_name": "Google Analytics (GA4) \u2014 Read & Write",
   "version": "1.3.1",
   "description": "GA4 MCP that reads AND writes: reports, funnels, audits, and server-side events. 26 tools.",
   "long_description": "The GA4 MCP that reads AND writes. Most GA4 MCP servers are read-only. This one gives your AI agent the full loop: run reports and funnels (Data API), audit your setup (custom dimensions, key events, compatibility checks), send ecommerce and conversion events server-side (Measurement Protocol v2), and verify them in the realtime report.",
   "author": {
-    "name": "Leonardo Sepúlveda",
+    "name": "Leonardo Sep\u00falveda",
     "email": "lsepulvedatabares@gmail.com"
   },
   "repository": {
@@ -69,7 +69,7 @@
       "sensitive": true
     }
   },
-  "icon": "icon.svg",
+  "icon": "icon.png",
   "tools": [
     {
       "name": "ga_run_report",
@@ -180,19 +180,23 @@
   "prompts": [
     {
       "name": "weekly_performance",
-      "description": "Analyze last week of traffic, sessions, conversions, and top countries."
+      "description": "Analyze last week of traffic, sessions, conversions, and top countries.",
+      "text": "Run a weekly GA4 performance analysis. Use ga_run_report for activeUsers, sessions, screenPageViews, and conversions over 7daysAgo\u2013today."
     },
     {
       "name": "ecommerce_funnel",
-      "description": "Analyze the view_item to purchase funnel for the last 30 days."
+      "description": "Analyze the view_item to purchase funnel for the last 30 days.",
+      "text": "Analyze the ecommerce funnel for the last 30 days using ga_run_funnel_report with steps view_item, add_to_cart, begin_checkout, and purchase."
     },
     {
       "name": "send_and_verify",
-      "description": "Validate, send, and confirm a Measurement Protocol event in realtime."
+      "description": "Validate, send, and confirm a Measurement Protocol event in realtime.",
+      "text": "Validate an event with ga_validate_event, send it with ga_send_event, then confirm with ga_run_realtime_report."
     },
     {
       "name": "compare_clients",
-      "description": "Compare last-week performance between two client properties."
+      "description": "Compare last-week performance between two client properties.",
+      "text": "Use ga_get_account_summaries, then run ga_run_report twice with different propertyId values and compare the clients."
     }
   ],
   "compatibility": {
