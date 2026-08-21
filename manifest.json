@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "mcp-google-analytics",
   "display_name": "Google Analytics (GA4) — Read & Write",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "GA4 MCP that reads AND writes: reports, funnels, audits, and server-side events. 26 tools.",
   "long_description": "The GA4 MCP that reads AND writes. Most GA4 MCP servers are read-only. This one gives your AI agent the full loop: run reports and funnels (Data API), audit your setup (custom dimensions, key events, compatibility checks), send ecommerce and conversion events server-side (Measurement Protocol v2), and verify them in the realtime report.",
   "author": {
@@ -69,6 +69,132 @@
       "sensitive": true
     }
   },
+  "icon": "icon.svg",
+  "tools": [
+    {
+      "name": "ga_run_report",
+      "description": "Run a custom Google Analytics report with dimensions and metrics."
+    },
+    {
+      "name": "ga_run_realtime_report",
+      "description": "Get real-time Google Analytics data from the last 30 minutes."
+    },
+    {
+      "name": "ga_get_metadata",
+      "description": "Get available dimensions and metrics metadata for a GA4 property."
+    },
+    {
+      "name": "ga_list_accounts",
+      "description": "List Google Analytics accounts accessible to the service account."
+    },
+    {
+      "name": "ga_list_properties",
+      "description": "List GA4 properties, optionally filtered by account ID."
+    },
+    {
+      "name": "ga_get_property",
+      "description": "Get details about a GA4 property."
+    },
+    {
+      "name": "ga_list_data_streams",
+      "description": "List data streams and measurement IDs for a GA4 property."
+    },
+    {
+      "name": "ga_run_pivot_report",
+      "description": "Run a pivot table report with row and column dimensions."
+    },
+    {
+      "name": "ga_run_funnel_report",
+      "description": "Run a funnel analysis report across event steps."
+    },
+    {
+      "name": "ga_batch_run_reports",
+      "description": "Run multiple reports in a single request."
+    },
+    {
+      "name": "ga_get_account_summaries",
+      "description": "Get all accessible accounts and properties in one call."
+    },
+    {
+      "name": "ga_list_custom_dimensions",
+      "description": "List custom dimensions defined for a GA4 property."
+    },
+    {
+      "name": "ga_list_custom_metrics",
+      "description": "List custom metrics defined for a GA4 property."
+    },
+    {
+      "name": "ga_list_key_events",
+      "description": "List key events (conversions) configured for a GA4 property."
+    },
+    {
+      "name": "ga_list_google_ads_links",
+      "description": "List Google Ads accounts linked to a GA4 property."
+    },
+    {
+      "name": "ga_check_compatibility",
+      "description": "Check whether a dimension and metric combination is valid before reporting."
+    },
+    {
+      "name": "ga_send_event",
+      "description": "Send a custom event to GA4 via Measurement Protocol."
+    },
+    {
+      "name": "ga_validate_event",
+      "description": "Validate an event against the debug endpoint without recording it."
+    },
+    {
+      "name": "ga_send_pageview",
+      "description": "Send a page view event to GA4."
+    },
+    {
+      "name": "ga_send_purchase",
+      "description": "Send an ecommerce purchase event to GA4."
+    },
+    {
+      "name": "ga_send_login",
+      "description": "Send a login event to GA4."
+    },
+    {
+      "name": "ga_send_signup",
+      "description": "Send a sign-up event to GA4."
+    },
+    {
+      "name": "ga_send_add_to_cart",
+      "description": "Send an add-to-cart event to GA4."
+    },
+    {
+      "name": "ga_send_begin_checkout",
+      "description": "Send a begin-checkout event to GA4."
+    },
+    {
+      "name": "ga_send_view_item",
+      "description": "Send a product view event to GA4."
+    },
+    {
+      "name": "ga_send_refund",
+      "description": "Send a full or partial refund event to GA4."
+    }
+  ],
+  "tools_generated": true,
+  "prompts": [
+    {
+      "name": "weekly_performance",
+      "description": "Analyze last week of traffic, sessions, conversions, and top countries."
+    },
+    {
+      "name": "ecommerce_funnel",
+      "description": "Analyze the view_item to purchase funnel for the last 30 days."
+    },
+    {
+      "name": "send_and_verify",
+      "description": "Validate, send, and confirm a Measurement Protocol event in realtime."
+    },
+    {
+      "name": "compare_clients",
+      "description": "Compare last-week performance between two client properties."
+    }
+  ],
   "compatibility": {
     "platforms": [
       "darwin",

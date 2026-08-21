@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-08-21
+
+### Added
+- Full tool annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`) so MCP clients and Smithery can classify read vs write tools.
+- Four workflow prompts: `weekly_performance`, `ecommerce_funnel`, `send_and_verify`, `compare_clients`.
+- Server icon, Smithery badge, and homepage link back to the Smithery listing.
+- MCPB manifest now includes all 26 tools and the four prompts so hosted catalogs can scan capabilities without credentials.
+
 ## [1.3.0] - 2026-08-21
 
 ### Added
@@ -126,6 +134,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **1.3.1** - Smithery quality: full annotations, workflow prompts, icon, and catalog metadata
 - **1.3.0** - Multi-property mode: optional propertyId per read tool, GA_PROPERTY_ID now optional
 - **1.2.1** - MCP Registry manifest and one-click install button
 - **1.2.0** - 8 new tools: account summaries, custom dimensions/metrics, key events, Ads links, compatibility check, view_item and refund

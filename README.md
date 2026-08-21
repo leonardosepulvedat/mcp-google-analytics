@@ -10,6 +10,7 @@ A Model Context Protocol (MCP) server for Google Analytics 4, providing comprehe
 [![npm downloads](https://img.shields.io/npm/dm/mcp-google-analytics.svg)](https://www.npmjs.com/package/mcp-google-analytics)
 [![CI](https://github.com/leonardosepulvedat/mcp-google-analytics/actions/workflows/ci.yml/badge.svg)](https://github.com/leonardosepulvedat/mcp-google-analytics/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![smithery badge](https://smithery.ai/badge/lsepulvedatabares/mcp-google-analytics)](https://smithery.ai/servers/lsepulvedatabares/mcp-google-analytics)
 
 ## ⚡ One-Click Install
 
@@ -575,6 +576,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 - [GitHub Repository](https://github.com/leonardosepulvedat/mcp-google-analytics)
 - [npm Package](https://www.npmjs.com/package/mcp-google-analytics)
+- [Smithery](https://smithery.ai/servers/lsepulvedatabares/mcp-google-analytics)
 - [MCP Documentation](https://modelcontextprotocol.io/)
 - [GA4 Data API Documentation](https://developers.google.com/analytics/devguides/reporting/data/v1)
 - [Measurement Protocol Documentation](https://developers.google.com/analytics/devguides/collection/protocol/ga4)

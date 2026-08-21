@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Google Analytics MCP">
+  <rect width="512" height="512" rx="96" fill="#F9AB00"/>
+  <rect x="96" y="288" width="72" height="128" rx="16" fill="#FFFFFF"/>
+  <rect x="220" y="192" width="72" height="224" rx="16" fill="#FFFFFF"/>
+  <rect x="344" y="112" width="72" height="304" rx="16" fill="#FFFFFF"/>
+</svg>

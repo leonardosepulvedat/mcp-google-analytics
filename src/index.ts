@@ -94,8 +94,18 @@ const userPropertiesSchema = z
   .optional()
   .describe('User properties (e.g., {subscription_tier: {value: "premium"}})');
 
-const readOnly = { readOnlyHint: true };
-const sendsData = { readOnlyHint: false, openWorldHint: true };
+const readOnly = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: true,
+};
+const sendsData = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: true,
+};
 
 const server = new McpServer({
   name: 'mcp-google-analytics',
@@ -655,6 +665,95 @@ as the original purchase.`,
         userProperties: args.user_properties,
       })
     )
+);
+
+server.registerPrompt(
+  'weekly_performance',
+  {
+    description:
+      'Analyze last week of GA4 traffic: users, sessions, conversions, and top countries. Pass propertyId to target a specific client property.',
+    argsSchema: {
+      propertyId: z.string().optional(),
+    },
+  },
+  async ({ propertyId }) => ({
+    messages: [
+      {
+        role: 'user',
+        content: {
+          type: 'text',
+          text: `Run a weekly performance analysis${propertyId ? ` for property ${propertyId}` : ''}. Use ga_run_report for activeUsers, sessions, screenPageViews, and conversions over 7daysAgo–today (limit 10). Then ga_run_report again grouped by country, ordered by activeUsers descending. Summarize what changed and what to look at next.`,
+        },
+      },
+    ],
+  })
+);
+
+server.registerPrompt(
+  'ecommerce_funnel',
+  {
+    description:
+      'Analyze the view_item → add_to_cart → begin_checkout → purchase funnel for the last 30 days.',
+    argsSchema: {
+      propertyId: z.string().optional(),
+    },
+  },
+  async ({ propertyId }) => ({
+    messages: [
+      {
+        role: 'user',
+        content: {
+          type: 'text',
+          text: `Analyze the ecommerce funnel${propertyId ? ` on property ${propertyId}` : ''} for the last 30 days using ga_run_funnel_report with steps view_item, add_to_cart, begin_checkout, and purchase. Report drop-off at each step.`,
+        },
+      },
+    ],
+  })
+);
+
+server.registerPrompt(
+  'send_and_verify',
+  {
+    description:
+      'Validate a Measurement Protocol event, send it, then confirm it appears in the realtime report.',
+    argsSchema: {
+      eventName: z.string(),
+    },
+  },
+  async ({ eventName }) => ({
+    messages: [
+      {
+        role: 'user',
+        content: {
+          type: 'text',
+          text: `Validate a ${eventName} event with ga_validate_event (do not record it). If validation is clean, send it with ga_send_event, then confirm with ga_run_realtime_report grouped by eventName.`,
+        },
+      },
+    ],
+  })
+);
+
+server.registerPrompt(
+  'compare_clients',
+  {
+    description:
+      'Agency workflow: list all accessible properties, then compare last-week active users between two client properties.',
+    argsSchema: {
+      propertyA: z.string(),
+      propertyB: z.string(),
+    },
+  },
+  async ({ propertyA, propertyB }) => ({
+    messages: [
+      {
+        role: 'user',
+        content: {
+          type: 'text',
+          text: `Use ga_get_account_summaries if you need context, then run ga_run_report twice for 7daysAgo–today (metrics: activeUsers, sessions, conversions; limit 10): once with propertyId ${propertyA} and once with propertyId ${propertyB}. Compare the two clients side by side.`,
+        },
+      },
+    ],
+  })
 );
 
 // Start server
