@@ -45,7 +45,9 @@ Get your MCP Google Analytics server running in 5 minutes or less!
 2. Click "Property Settings"
 3. Copy the "Property ID" (numeric, e.g., `123456789`)
 
-### Get Measurement ID and API Secret (for sending events)
+### Send events later (optional)
+
+Skip this if you only want reports. To also record events from the agent:
 
 1. In GA4 Admin, click "Data Streams"
 2. Click on your data stream (e.g., "Web")
@@ -84,9 +86,7 @@ npm install -g mcp-google-analytics
       "args": ["-y", "mcp-google-analytics"],
       "env": {
         "GA_SERVICE_ACCOUNT_JSON": "/Users/you/path/to/service-account.json",
-        "GA_PROPERTY_ID": "123456789",
-        "GA_MEASUREMENT_ID": "G-XXXXXXXXXX",
-        "GA_API_SECRET": "your-api-secret-here"
+        "GA_PROPERTY_ID": "123456789"
       }
     }
   }

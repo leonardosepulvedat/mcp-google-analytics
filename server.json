@@ -18,28 +18,28 @@
       "environmentVariables": [
         {
           "name": "GA_SERVICE_ACCOUNT_JSON",
-          "description": "Service account JSON for reading reports: file path or inline JSON (needed for read tools)",
+          "description": "To read reports: path to the service account JSON key, or the JSON itself",
           "isRequired": false,
           "format": "string",
           "isSecret": true
         },
         {
           "name": "GA_PROPERTY_ID",
-          "description": "Numeric GA4 property ID, e.g. 123456789 (needed for read tools)",
+          "description": "To read reports: numeric Property ID from GA4 Admin, e.g. 123456789",
           "isRequired": false,
           "format": "string",
           "isSecret": false
         },
         {
           "name": "GA_MEASUREMENT_ID",
-          "description": "Measurement ID of the data stream, e.g. G-XXXXXXXXXX (needed for event-sending tools)",
+          "description": "Optional. Only to send events: Measurement ID, e.g. G-XXXXXXXXXX",
           "isRequired": false,
           "format": "string",
           "isSecret": false
         },
         {
           "name": "GA_API_SECRET",
-          "description": "Measurement Protocol API secret (needed for event-sending tools)",
+          "description": "Optional. Only to send events: Measurement Protocol API secret",
           "isRequired": false,
           "format": "string",
           "isSecret": true

@@ -14,13 +14,20 @@ A Model Context Protocol (MCP) server for Google Analytics 4, providing comprehe
 
 ## ⚡ One-Click Install
 
-[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=google-analytics&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1nb29nbGUtYW5hbHl0aWNzIl0sImVudiI6eyJHQV9TRVJWSUNFX0FDQ09VTlRfSlNPTiI6Ii9wYXRoL3RvL3NlcnZpY2UtYWNjb3VudC5qc29uIiwiR0FfUFJPUEVSVFlfSUQiOiIxMjM0NTY3ODkiLCJHQV9NRUFTVVJFTUVOVF9JRCI6IkctWFhYWFhYWFhYWCIsIkdBX0FQSV9TRUNSRVQiOiJ5b3VyLWFwaS1zZWNyZXQifX0=)
+You only need **two values** to start (same as any other GA4 MCP): the service account JSON and your property ID. Sending events is an optional extra.
 
-Click **Install in Cursor** above, approve, then replace the placeholder values in `~/.cursor/mcp.json` with your real credentials (see [Configuration](#-configuration) below).
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=google-analytics&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1nb29nbGUtYW5hbHl0aWNzIl0sImVudiI6eyJHQV9TRVJWSUNFX0FDQ09VTlRfSlNPTiI6Ii9wYXRoL3RvL3NlcnZpY2UtYWNjb3VudC5qc29uIiwiR0FfUFJPUEVSVFlfSUQiOiIxMjM0NTY3ODkifX0=)
 
-## ⚡ Token Optimization - READ THIS FIRST!
+Click **Install in Cursor**, then paste:
 
-**IMPORTANT**: Google Analytics reports can return large datasets that consume significant tokens. This server is designed with token optimization in mind:
+1. **`GA_SERVICE_ACCOUNT_JSON`** — path to the downloaded key file, or the JSON itself  
+2. **`GA_PROPERTY_ID`** — the numeric ID in GA4 Admin → Property Settings (e.g. `123456789`)
+
+That is enough to ask “users by country this week”. To also send events, add two more keys later (see [Send events (optional)](#send-events-optional)).
+
+## 💡 Keep reports small
+
+Reports can get large. This server is designed with token optimization in mind:
 
 - **All read tools default to 10 results** - Adjust the `limit` parameter as needed
 - **Use specific date ranges** - Avoid querying years of data at once
@@ -49,56 +56,49 @@ npx mcp-google-analytics
 
 ## 🔧 Configuration
 
-This server requires different credentials for reading data vs sending events:
+**Start with two values.** That unlocks reports, funnels, realtime, and property audits — everything most people need, and the same setup every other GA4 MCP asks for.
 
-### For Reading Data (Google Analytics Data API)
+### 1. Service account key
 
-You need a **Service Account** with access to your GA4 property:
+1. In [Google Cloud Console](https://console.cloud.google.com/), enable **Google Analytics Data API**.
+2. IAM & Admin → Service Accounts → Create. Download a JSON key.
+3. In GA4: Admin → Property Access Management → add the service account email as **Viewer**.
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create or select a project
-3. Enable the **Google Analytics Data API**
-4. Create a Service Account:
-   - Go to "IAM & Admin" > "Service Accounts"
-   - Click "Create Service Account"
-   - Give it a name (e.g., "GA4 MCP Reader")
-   - Grant the "Viewer" role
-   - Create a JSON key and download it
-5. Add the service account email to your GA4 property:
-   - Go to GA4 Admin > Property Access Management
-   - Add the service account email with "Viewer" role
-6. Get your Property ID:
-   - Go to GA4 Admin > Property Settings
-   - Copy the Property ID (numeric, e.g., "123456789")
+Use the file path or paste the JSON into `GA_SERVICE_ACCOUNT_JSON`.
 
-### For Sending Events (Measurement Protocol)
+### 2. Property ID
 
-You need a **Measurement ID** and **API Secret**:
+GA4 Admin → Property Settings → **Property ID** (numbers only, e.g. `123456789`).
 
-1. Go to GA4 Admin > Data Streams
-2. Select your data stream (web, iOS, or Android)
-3. Copy the **Measurement ID** (format: `G-XXXXXXXXXX`)
-4. Click "Measurement Protocol API secrets"
-5. Click "Create" to generate a new API secret
-6. Copy the secret value
+```json
+{
+  "mcpServers": {
+    "google-analytics": {
+      "command": "npx",
+      "args": ["-y", "mcp-google-analytics"],
+      "env": {
+        "GA_SERVICE_ACCOUNT_JSON": "/path/to/service-account.json",
+        "GA_PROPERTY_ID": "123456789"
+      }
+    }
+  }
+}
+```
 
-### Environment Variables
+You can now ask: *“Show me active users by country this week.”*
 
-Set these environment variables:
+### Send events (optional)
 
-```bash
-# For Data API (reading)
-export GA_SERVICE_ACCOUNT_JSON=/path/to/service-account.json
-# Or provide JSON directly:
-# export GA_SERVICE_ACCOUNT_JSON='{"type":"service_account","project_id":"..."}'
+Only if you want the agent to **record** events (purchases, signups, custom events). Most GA4 MCPs cannot do this; it is extra, not required.
 
-# Optional: default property. If omitted, pass "propertyId" per tool call
-# (multi-property mode — see below)
-export GA_PROPERTY_ID=123456789
+1. GA4 Admin → Data Streams → your stream → copy **Measurement ID** (`G-XXXXXXXXXX`).
+2. Measurement Protocol API secrets → Create → copy the secret.
 
-# For Measurement Protocol (writing)
-export GA_MEASUREMENT_ID=G-XXXXXXXXXX
-export GA_API_SECRET=your-api-secret-here
+Add them next to the two values you already have:
+
+```json
+"GA_MEASUREMENT_ID": "G-XXXXXXXXXX",
+"GA_API_SECRET": "your-api-secret"
 ```
 
 ## 🏢 Multi-Property Mode (Agencies)
@@ -132,9 +132,7 @@ Add to your Claude Desktop configuration file:
       "args": ["-y", "mcp-google-analytics"],
       "env": {
         "GA_SERVICE_ACCOUNT_JSON": "/path/to/service-account.json",
-        "GA_PROPERTY_ID": "123456789",
-        "GA_MEASUREMENT_ID": "G-XXXXXXXXXX",
-        "GA_API_SECRET": "your-api-secret"
+        "GA_PROPERTY_ID": "123456789"
       }
     }
   }
@@ -150,9 +148,7 @@ Or if installed globally:
       "command": "mcp-google-analytics",
       "env": {
         "GA_SERVICE_ACCOUNT_JSON": "/path/to/service-account.json",
-        "GA_PROPERTY_ID": "123456789",
-        "GA_MEASUREMENT_ID": "G-XXXXXXXXXX",
-        "GA_API_SECRET": "your-api-secret"
+        "GA_PROPERTY_ID": "123456789"
       }
     }
   }
@@ -176,9 +172,7 @@ Add to your Cursor MCP settings file:
       "args": ["-y", "mcp-google-analytics"],
       "env": {
         "GA_SERVICE_ACCOUNT_JSON": "/path/to/service-account.json",
-        "GA_PROPERTY_ID": "123456789",
-        "GA_MEASUREMENT_ID": "G-XXXXXXXXXX",
-        "GA_API_SECRET": "your-api-secret"
+        "GA_PROPERTY_ID": "123456789"
       }
     }
   }

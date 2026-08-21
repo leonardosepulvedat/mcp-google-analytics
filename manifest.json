@@ -43,28 +43,28 @@
     "ga_service_account_json": {
       "type": "string",
       "title": "Service Account JSON",
-      "description": "Path to the service account key file, or the JSON itself (enables the 16 read tools)",
+      "description": "To read reports: path to the service account key, or the JSON itself",
       "required": false,
       "sensitive": true
     },
     "ga_property_id": {
       "type": "string",
       "title": "GA4 Property ID",
-      "description": "Numeric property ID, e.g. 123456789 (enables the 16 read tools)",
+      "description": "To read reports: numeric Property ID, e.g. 123456789",
       "required": false,
       "sensitive": false
     },
     "ga_measurement_id": {
       "type": "string",
       "title": "Measurement ID",
-      "description": "Data stream measurement ID, e.g. G-XXXXXXXXXX (enables the 10 event-sending tools)",
+      "description": "Optional. Only to send events: Measurement ID, e.g. G-XXXXXXXXXX",
       "required": false,
       "sensitive": false
     },
     "ga_api_secret": {
       "type": "string",
       "title": "Measurement Protocol API Secret",
-      "description": "API secret created under the data stream (enables the 10 event-sending tools)",
+      "description": "Optional. Only to send events: Measurement Protocol API secret",
       "required": false,
       "sensitive": true
     }
